@@ -40,6 +40,11 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     
     constructor(address bnuTokenAddress, address avatarArtNFTAddress) 
         AvatarArtBase(bnuTokenAddress, avatarArtNFTAddress){}
+
+    function getAuctionCount() public view returns(uint256)
+    {
+        return _auctions.length;
+    }
         
      /**
      * @dev {See - IAvatarArtAuction.createAuction}
