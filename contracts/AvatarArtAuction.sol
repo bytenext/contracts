@@ -33,10 +33,10 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     }
     
     //AUCTION 
-    Auction[] internal _auctions;       //List of auction
+    Auction[] public _auctions;       //List of auction
     
     //Mapping between specific auction and its histories
-    mapping(uint256 => AuctionHistory[]) internal _auctionHistories;
+    mapping(uint256 => AuctionHistory[]) public _auctionHistories;
     
     constructor(address bnuTokenAddress, address avatarArtNFTAddress) 
         AvatarArtBase(bnuTokenAddress, avatarArtNFTAddress){}
@@ -108,6 +108,8 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
             
             //Transfer AvatarArtNFT from contract to winner
             getAvatarArtNFT().safeTransferFrom(address(this), auction.winner, auction.tokenId);
+
+            emit Distributed(auction.tokenId, auction.winner, _now());
         }else{//No auction
             //Transfer AvatarArtNFT from contract to owner
             getAvatarArtNFT().safeTransferFrom(address(this), auction.tokenOwner, auction.tokenId);
@@ -131,26 +133,12 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
         return (false, Auction(0,0,0, address(0), 0, address(0), EAuctionStatus.Open));
     }
     
-    /**
-     * @dev Get auction count 
-     */
-    function getAuctionCount() public view returns(uint256){
-        return _auctions.length;
-    }
-    
      /**
      * @dev Get auction infor by `auctionIndex` 
      */
     function getAuction(uint256 auctionIndex) external view returns(Auction memory){
         require(auctionIndex < getAuctionCount());
         return _auctions[auctionIndex];
-    }
-    
-    /**
-     * @dev Get all auction information
-     */ 
-    function getAuctions() public view returns(Auction[] memory){
-        return _auctions;
     }
     
     /**
@@ -178,10 +166,6 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
         }
         
         return result;
-    }
-    
-    function getActionHistory(uint256 auctionIndex) public view returns(AuctionHistory[] memory){
-        return _auctionHistories[auctionIndex];
     }
     
     /**
@@ -214,7 +198,7 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
         auction.winner = _msgSender();
         auction.price = price;
         
-        emit NewPlaceSetted(auctionIndex, _msgSender(), price);
+        emit NewPlaceSetted(auction.tokenId, auctionIndex, _msgSender(), price);
         
         return true;
     }
@@ -251,5 +235,6 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     event NewAuctionCreated(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price);
     event AuctionPriceUpdated(uint256 auctionIndex, uint256 price);
     event AuctionTimeUpdated(uint256 auctionIndex, uint256 startTime, uint256 endTime);
-    event NewPlaceSetted(uint256 auctionIndex, address account, uint256 price);
+    event NewPlaceSetted(uint256 tokenId, uint256 auctionIndex, address account, uint256 price);
+    event Distributed(uint256 tokenId, address winner, uint256 time);
 }
