@@ -57,7 +57,7 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     function createAuction(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price) external override onlyOwner returns(uint256){
         require(_now() <= startTime, "Start time is invalid");
         require(startTime < endTime, "Time is invalid");
-        (bool isExisted,) = getActiveAuctionByTokenId(tokenId);
+        (bool isExisted,,) = getActiveAuctionByTokenId(tokenId);
         require(!isExisted, "Token is in other auction");
         
         IERC721 avatarArtNFT = getAvatarArtNFT();
@@ -128,14 +128,14 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     /**
      * @dev Get active auction by `tokenId`
      */ 
-    function getActiveAuctionByTokenId(uint256 tokenId) public view returns(bool, Auction memory){
+    function getActiveAuctionByTokenId(uint256 tokenId) public view returns(bool, Auction memory, uint256){
         for(uint256 index = _auctions.length; index > 0; index--){
             Auction memory auction = _auctions[index - 1];
             if(auction.tokenId == tokenId && auction.status == EAuctionStatus.Open && auction.startTime <= _now() && auction.endTime >= _now())
-                return (true, auction);
+                return (true, auction, index - 1);
         }
         
-        return (false, Auction(0,0,0, address(0), 0, address(0), EAuctionStatus.Open));
+        return (false, Auction(0,0,0, address(0), 0, address(0), EAuctionStatus.Open), 0);
     }
     
      /**
