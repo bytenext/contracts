@@ -2,40 +2,51 @@
 
 pragma solidity ^0.8.0;
 
-import "./Context.sol";
+import "./AvatarArtContext.sol";
 
-abstract contract Ownable is Context {
-    
-    modifier onlyOwner{
-        require(_msgSender() == _owner, "Forbidden");
+abstract contract Ownable is AvatarArtContext {
+    address public _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor() {
+        _setOwner(_msgSender());
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(_owner == _msgSender(), "Ownable: caller is not the owner");
         _;
     }
-    
-    address internal _owner;
-    address internal _newRequestingOwner;
-    
-    constructor(){
-        _owner = _msgSender();
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        _setOwner(address(0));
     }
-    
-    function getOwner() external virtual view returns(address){
-        return _owner;
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _setOwner(newOwner);
     }
-    
-    function requestChangeOwner(address newOwner) external  onlyOwner{
-        require(_owner != newOwner, "New owner is current owner");
-        _newRequestingOwner = newOwner;
-    }
-    
-    function approveToBeOwner() external{
-        require(_newRequestingOwner != address(0), "Zero address");
-        require(_msgSender() == _newRequestingOwner, "Forbidden");
-        
+
+    function _setOwner(address newOwner) internal {
         address oldOwner = _owner;
-        _owner = _newRequestingOwner;
-        
-        emit OwnerChanged(oldOwner, _owner);
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
     }
-    
-    event OwnerChanged(address oldOwner, address newOwner);
 }

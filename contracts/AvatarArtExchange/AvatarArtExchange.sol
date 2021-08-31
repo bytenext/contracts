@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-import ".././interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import ".././interfaces/IAvatarArtExchange.sol";
 import ".././core/Runnable.sol";
 

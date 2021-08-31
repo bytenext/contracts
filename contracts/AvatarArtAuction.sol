@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/token/ERC721/IERC721.sol";
-import "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IAvatarArtAuction.sol";
 import "./AvatarArtBase.sol";
 
