@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import ".././interfaces/IAvatarArtExchange.sol";
+import "./IAvatarArtExchange.sol";
 import ".././core/Runnable.sol";
 
 pragma solidity ^0.8.0;
 
+/**
+* @dev Contract is used to exchange token as order book 
+*/
 contract AvatarArtExchange is Runnable, IAvatarArtExchange{
     enum EOrderType{
         Buy, 
@@ -239,7 +242,7 @@ contract AvatarArtExchange is Runnable, IAvatarArtExchange{
     }
     
     /**
-     * @dev See {IAvatarArtOrderBook.buy}
+     * @dev See {IAvatarArtExchange.buy}
      * 
      * IMPLEMENTATION
      *    1. Validate requirements
@@ -435,6 +438,9 @@ contract AvatarArtExchange is Runnable, IAvatarArtExchange{
             return _cancelSellOrder(token0Address, token1Address, orderId);
     }
 
+    /**
+    * @dev Withdraw all system fee
+    */
     function withdrawFee(address[] memory tokenAddresses, address receipent) external onlyOwner{
         require(tokenAddresses.length > 0);
         for(uint256 index = 0; index < tokenAddresses.length; index++){
@@ -444,6 +450,14 @@ contract AvatarArtExchange is Runnable, IAvatarArtExchange{
                 _systemFees[tokenAddress] = 0;
             }
         }
+    }
+
+    /**
+     * @dev Owner withdraws ERC20 token from contract by `tokenAddress`
+     */
+    function withdrawToken(address tokenAddress) public onlyOwner{
+        IERC20 token = IERC20(tokenAddress);
+        token.transfer(_owner, token.balanceOf(address(this)));
     }
     
     function _increaseFeeReward(address tokenAddress, uint256 feeAmount) internal{

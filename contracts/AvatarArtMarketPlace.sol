@@ -4,10 +4,19 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/IAvatarArtMarketPlace.sol";
+import "./interfaces/IAvatarArtMarketplace.sol";
 import "./AvatarArtBase.sol";
 
-contract AvatarArtMarketPlace is AvatarArtBase, IAvatarArtMarketPlace{
+/**
+* @dev Contract is used so that user can buy and sell NFT
+* Business steps:
+*   1. Artists submit selling information to system
+*   2. Admin approve these informations and create an order.
+*   3. If artist has any change, they can cancel this order
+*   4. Other user can buy NFT by pay BNU token
+*   Note that: The submiting and approving will be processed outside blockchain
+*/
+contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     struct MarketHistory{
         address buyer;
         address seller;
@@ -29,7 +38,7 @@ contract AvatarArtMarketPlace is AvatarArtBase, IAvatarArtMarketPlace{
         AvatarArtBase(bnuTokenAddress, avatarArtNFTAddress){}
     
     /**
-     * @dev Create a sell order to sell BNU category
+     * @dev Create a selling order to sell NFT
      */
     function createSellOrder(uint256 tokenId, uint256 price) external onlyOwner override returns(bool){
         //Validate
@@ -138,6 +147,14 @@ contract AvatarArtMarketPlace is AvatarArtBase, IAvatarArtMarketPlace{
         emit Purchased(_msgSender(), tokenId, tokenPrice);
         
         return tokenPrice;
+    }
+
+    /**
+     * @dev Owner withdraws ERC20 token from contract by `tokenAddress`
+     */
+    function withdrawToken(address tokenAddress) public onlyOwner{
+        IERC20 token = IERC20(tokenAddress);
+        token.transfer(_owner, token.balanceOf(address(this)));
     }
     
     /**

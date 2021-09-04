@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IAvatarArtMarketPlace{
+interface IAvatarArtMarketplace{
     /**
      * @dev User that created sell order can cancel that order
      */ 

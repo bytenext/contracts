@@ -7,6 +7,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IAvatarArtAuction.sol";
 import "./AvatarArtBase.sol";
 
+/**
+* @dev Contract is used so that user can join an auction
+* Business steps:
+*   1. Artists submit auction information to system
+*   2. Admin approve these informations and create an auction.
+*   Note that: The submiting and approving will be processed outside blockchain
+*   3. User joins the auction and winner will be the one who pay the highest price
+*   4. At the end of auction, anyone can call `distribute` function to distribute NFT to the winner
+*      If there is not winner, NFT will be payback to artist
+*/
 contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
     enum EAuctionStatus{
         Open,
@@ -235,6 +245,14 @@ contract AvatarArtAuction is AvatarArtBase, IAvatarArtAuction{
         
         emit AuctionTimeUpdated(auctionIndex, startTime, endTime);
         return true;
+    }
+
+    /**
+     * @dev Owner withdraws ERC20 token from contract by `tokenAddress`
+     */
+    function withdrawToken(address tokenAddress) public onlyOwner{
+        IERC20 token = IERC20(tokenAddress);
+        token.transfer(_owner, token.balanceOf(address(this)));
     }
     
     event NewAuctionCreated(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price);

@@ -15,8 +15,8 @@ contract AvatarArtNFT is ERC721, Ownable{
      * @dev Create new NFT 
      */
     function create(uint tokenId) external returns(bool){
-        require(_avatarArtArtistKYC.isVerified(msg.sender), "Forbidden");
-        _safeMint(msg.sender, tokenId);
+        require(_avatarArtArtistKYC.isVerified(_msgSender()), "Forbidden");
+        _safeMint(_msgSender(), tokenId);
         return true;
     }
     

@@ -7,6 +7,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import "./AvatarArtERC20.sol";
 import ".././core/Ownable.sol";
 
+/**
+* @dev Contract is used to deploy an ERC20 token that stands for an NFT
+* With high valuable NFT, it will be divided into small part, 
+* therefore an ERC20 token is created so that users can buy some percents
+* This ERC20 token will be traded in AvatarArtExchange
+ */
 contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
     struct TokenInfo{
         string name;
@@ -33,6 +39,9 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
         _avatarArtNft = IERC721(avatarNftAddress);
     }
 
+    /**
+    * @dev System administrator approve for NFT with `tokenId` can generate ERC20 token
+    */
     function approve(
         uint256 tokenId,
         string memory name,
@@ -54,6 +63,9 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
         });
     }
 
+    /**
+    * @dev Artist deploys ERC20 token
+    */
     function deployContract(uint256 tokenId) public returns(address){
         TokenInfo storage tokenInfo = _tokenInfos[tokenId];
         require(tokenInfo.isApproved, "NFT has not been approved");
@@ -67,6 +79,9 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
         return tokenInfo.tokenAddress;
     }
 
+    /**
+    * @dev Burn all ERC20 token if sender has all token to get NFT
+    */
     function burnToken(uint256 tokenId) external{
         TokenInfo storage tokenInfo = _tokenInfos[tokenId];
         require(tokenInfo.tokenAddress != address(0));
@@ -87,10 +102,17 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
         emit NftTokenBurned(_msgSender(), tokenId);
     }
 
+    /**
+    * @dev Allow generated ERC20 token to be trade with specific token
+    */
     function toggleAllowedPair(address pairAddress) external onlyOwner{
         _allowedPairs[pairAddress] = !_allowedPairs[pairAddress];
     }
 
+    /**
+    * @dev Withdraw NFT from contract
+    * For some reason, contract updating as example
+    */
     function withdrawNft(uint256 tokenId, address receipent) external onlyOwner{
         _avatarArtNft.safeTransferFrom(address(this), receipent, tokenId);
     }
