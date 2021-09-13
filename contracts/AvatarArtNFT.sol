@@ -44,4 +44,6 @@ contract AvatarArtNFT is ERC721, Ownable{
     function _baseURI() internal view override virtual returns (string memory) {
         return "https://cdn.avatarart.org/nft/collections/";
     }
+
+
 }
