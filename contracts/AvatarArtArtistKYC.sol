@@ -2,16 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "./core/Ownable.sol";
-import "./interfaces/IAvatarArtArtistKYC.sol";
 
 /**
 * @dev Verify and unverify Artist KYC information
 * This approvement will be used to verify KYC so that Artist can create their own NFTs
 */
-contract AvatarArtArtistKYC is IAvatarArtArtistKYC, Ownable{
+contract AvatarArtArtistKYC is Ownable{
     mapping(address => bool) private _isVerifieds;
     
-    function isVerified(address account) external override view returns(bool){
+    function isVerified(address account) external view returns(bool){
         return _isVerifieds[account];
     }
     
@@ -21,5 +20,8 @@ contract AvatarArtArtistKYC is IAvatarArtArtistKYC, Ownable{
      */
     function toggleVerify(address account) external onlyOwner{
         _isVerifieds[account] = !_isVerifieds[account];
+        emit VerificationToggled(account, _isVerifieds[account]);
     }
+
+    event VerificationToggled(address account, bool verified);
 }

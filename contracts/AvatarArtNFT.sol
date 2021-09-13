@@ -23,7 +23,8 @@ contract AvatarArtNFT is ERC721, Ownable{
     /**
      * @dev Burn a NFT
      */ 
-    function burn(uint tokenId) external onlyOwner returns(bool){
+    function burn(uint tokenId) external returns(bool){
+        require(ownerOf(tokenId) == _msgSender(), "Fobidden");
         _burn(tokenId);
         return true;
     }

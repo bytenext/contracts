@@ -34,21 +34,20 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     
     mapping(uint256 => MarketHistory[]) internal _marketHistories;
     
-    constructor(address bnuTokenAddress, address avatarArtNFTAddress) 
-        AvatarArtBase(bnuTokenAddress, avatarArtNFTAddress){}
+    constructor(address bnuTokenAddress, address avatarArtNFTAddress, address adminAddress) 
+        AvatarArtBase(bnuTokenAddress, avatarArtNFTAddress, adminAddress){}
     
     /**
      * @dev Create a selling order to sell NFT
      */
-    function createSellOrder(uint256 tokenId, uint256 price) external onlyOwner override returns(bool){
+    function createSellOrder(uint256 tokenId, uint256 price) external onlyAdmin override returns(bool){
         //Validate
         require(_tokenOwners[tokenId] == address(0), "Can not create sell order for this token");
-        IERC721 avatarArtNFT = getAvatarArtNFT();
         
-        address tokenOwner = avatarArtNFT.ownerOf(tokenId);
+        address tokenOwner = _avatarArtNFT.ownerOf(tokenId);
         
         //Transfer AvatarArtNFT to contract
-        avatarArtNFT.safeTransferFrom(tokenOwner, address(this), tokenId);
+        _avatarArtNFT.safeTransferFrom(tokenOwner, address(this), tokenId);
         
         _tokenOwners[tokenId] = tokenOwner;
         _tokenPrices[tokenId] = price;
@@ -65,13 +64,14 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     function cancelSellOrder(uint256 tokenId) external override returns(bool){
         require(_tokenOwners[tokenId] == _msgSender(), "Forbidden to cancel sell order");
 
-        IERC721 avatarArtNft = getAvatarArtNFT();
         //Transfer AvatarArtNFT from contract to sender
-        avatarArtNft.safeTransferFrom(address(this), _msgSender(), tokenId);
+        _avatarArtNFT.safeTransferFrom(address(this), _msgSender(), tokenId);
         
         _tokenOwners[tokenId] = address(0);
         _tokenPrices[tokenId] = 0;
         _tokens = _removeFromTokens(tokenId);
+
+        emit SellingOrderCanceled(tokenId, _msgSender(), _now());
         
         return true;
     }
@@ -112,26 +112,18 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     /**
      * @dev User purchases a BNU category
      */ 
-    function purchase(uint tokenId) external override returns(uint){
+    function purchase(uint tokenId, address affiliate) external override returns(uint){
         address tokenOwner = _tokenOwners[tokenId];
         require(tokenOwner != address(0),"Token has not been added");
         
         uint256 tokenPrice = _tokenPrices[tokenId];
         
         if(tokenPrice > 0){
-            IERC20 bnuTokenContract = getBnuToken();    
-            require(bnuTokenContract.transferFrom(_msgSender(), address(this), tokenPrice));
-            uint256 feeAmount = 0;
-            uint256 feePercent = getFeePercent();
-            if(feePercent > 0){
-                feeAmount = tokenPrice * feePercent / 100 / MULTIPLIER;
-                require(bnuTokenContract.transfer(_owner, feeAmount));
-            }
-            require(bnuTokenContract.transfer(tokenOwner, tokenPrice - feeAmount));
+            require(_processFeeFromSender(tokenId, tokenPrice, affiliate, tokenOwner, _msgSender()), "Can not pay fee");
         }
         
         //Transfer AvatarArtNFT from contract to sender
-        getAvatarArtNFT().transferFrom(address(this),_msgSender(), tokenId);
+        _avatarArtNFT.transferFrom(address(this),_msgSender(), tokenId);
         
         _marketHistories[tokenId].push(MarketHistory({
             buyer: _msgSender(),
@@ -177,4 +169,5 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     
     event NewSellOrderCreated(address indexed seller, uint256 time, uint256 tokenId, uint256 price);
     event Purchased(address indexed buyer, uint256 tokenId, uint256 price);
+    event SellingOrderCanceled(uint256 tokenId, address account, uint256 time);
 }

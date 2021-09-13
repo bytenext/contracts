@@ -61,6 +61,8 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
             pairToAddress: pairToAddress,
             isApproved: true
         });
+
+        emit DeploymentApproved(tokenId, name, symbol, totalSupply, tokenOwner, pairToAddress);
     }
 
     /**
@@ -107,6 +109,8 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
     */
     function toggleAllowedPair(address pairAddress) external onlyOwner{
         _allowedPairs[pairAddress] = !_allowedPairs[pairAddress];
+        
+        emit AllowedPairToggled(pairAddress);
     }
 
     /**
@@ -115,6 +119,8 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
     */
     function withdrawNft(uint256 tokenId, address receipent) external onlyOwner{
         _avatarArtNft.safeTransferFrom(address(this), receipent, tokenId);
+
+        emit NftWithdrawn(tokenId, receipent);
     }
 
     function onERC721Received(address operator, address from, uint256 tokenId, bytes calldata data) external view override returns (bytes4){
@@ -123,4 +129,7 @@ contract AvatarArtTokenDeployer is Ownable, IERC721Receiver {
     
     event NftTokenDeployed(uint256 tokenId, address tokenAddress, string name, string symbol, uint256 totalSupply, address pairToAddress, address balanceAddress);
     event NftTokenBurned(address owner, uint256 tokenId);
+    event DeploymentApproved(uint256 tokenId, string name, string symbol, uint256 totalSupply, address tokenOwner, address pairToAddress);
+    event NftWithdrawn(uint256 tokenId, address receipent);
+    event AllowedPairToggled(address pairAddress);
 }

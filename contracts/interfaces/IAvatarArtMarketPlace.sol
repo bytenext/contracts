@@ -9,12 +9,12 @@ interface IAvatarArtMarketplace{
     function cancelSellOrder(uint256 tokenId) external returns(bool);
     
     /**
-     * @dev Create a sell order to sell BNU category
+     * @dev Create a sell order to sell NFT
      */
     function createSellOrder(uint tokenId, uint price) external returns(bool);
     
     /**
-     * @dev User purchases a BNU category
+     * @dev User purchases a NFT
      */ 
-    function purchase(uint tokenId) external returns(uint);
+    function purchase(uint tokenId, address affiliate) external returns(uint);
 }
