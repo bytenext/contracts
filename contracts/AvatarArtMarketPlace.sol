@@ -53,7 +53,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     /**
      * @dev User that created sell order can cancel that order
      */ 
-    function cancelSellOrder(uint256 tokenId) external override returns(bool){
+    function cancelSellOrder(uint256 tokenId) external override nonReentrant returns(bool){
         require(_tokenInfos[tokenId].tokenOwner == _msgSender(), "Forbidden to cancel sell order");
 
         //Transfer AvatarArtNFT from contract to sender
@@ -70,7 +70,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     /**
      * @dev User purchases a BNU category
      */ 
-    function purchase(uint tokenId, address affiliate) external override returns(uint){
+    function purchase(uint tokenId, address affiliate) external override nonReentrant returns(uint){
         TokenInfo storage tokenInfo = _tokenInfos[tokenId];
         address tokenOwner = tokenInfo.tokenOwner;
         require(tokenOwner != address(0),"Token has not been added");

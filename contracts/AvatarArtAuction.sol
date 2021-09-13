@@ -84,7 +84,7 @@ contract AvatarArtAuction is AvatarArtBase{
      *  3. Keep fee for dev and pay cost for token owner
      *  4. Update auction
      */ 
-    function distribute(uint256 tokenId) external returns(bool){       //Anyone can call this function
+    function distribute(uint256 tokenId) external nonReentrant returns(bool){       //Anyone can call this function
         require(tokenId > 0, "Invalid tokenId");
         Auction storage auction = _auctions[tokenId];
         require(auction.status == EAuctionStatus.Open && auction.endTime < _now());
@@ -115,7 +115,7 @@ contract AvatarArtAuction is AvatarArtBase{
      *  2. Add auction histories
      *  3. Update auction
      */ 
-    function place(uint256 tokenId, uint256 price, address affiliate) external returns(bool){
+    function place(uint256 tokenId, uint256 price, address affiliate) external nonReentrant returns(bool){
         require(tokenId > 0, "Invalid tokenId");
         Auction storage auction = _auctions[tokenId];
         require(auction.status == EAuctionStatus.Open && auction.startTime <= _now() && auction.endTime >= _now(), "Invalid auction");

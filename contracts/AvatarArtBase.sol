@@ -8,9 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IAvatarArtNftTransactionInfo.sol";
 import "./interfaces/IFeeInfo.sol";
 import "./core/Ownable.sol";
+import "./core/ReentrancyGuard.sol";
 
-
-contract AvatarArtBase is Ownable, IERC721Receiver, IFeeInfo{
+contract AvatarArtBase is Ownable, IERC721Receiver, IFeeInfo, ReentrancyGuard{
     modifier onlyAdmin{
         require(_msgSender() == _adminAddress, "Only admin");
         _;
