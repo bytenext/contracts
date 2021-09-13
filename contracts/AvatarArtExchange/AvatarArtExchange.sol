@@ -551,7 +551,7 @@ contract AvatarArtExchange is Runnable, ReentrancyGuard, IAvatarArtExchange{
             require(order.orderId == orderId, "OrderId and orderIndex are not matched");
             order.filledQuantity = order.quantity;
             order.status = EOrderStatus.Filled;
-            delete _buyOrders[token0Address][token1Address][orderIndex];
+            delete _sellOrders[token0Address][token1Address][orderIndex];
         }
     }
     
