@@ -21,13 +21,6 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
         address tokenOwner;
         uint256 price;
     }
-
-    struct MarketHistory{
-        address buyer;
-        address seller;
-        uint256 price;
-        uint256 time;
-    }
     
     //uint256[] internal _tokens;
     
