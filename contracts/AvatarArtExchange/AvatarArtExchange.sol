@@ -66,40 +66,14 @@ contract AvatarArtExchange is Runnable, ReentrancyGuard, IAvatarArtExchange{
     }
     
     /**
-     * @dev Get all open orders by `token0Address`
-     */ 
-    function getOpenOrders(address token0Address, address token1Address, EOrderType orderType) public view returns(Order[] memory){
-        Order[] memory orders;
-        if(orderType == EOrderType.Buy)
-            orders = _buyOrders[token0Address][token1Address];
-        else
-            orders = _sellOrders[token0Address][token1Address];
-        if(orders.length == 0)
-            return orders;
-        
-        uint256 count = 0;
-        Order[] memory tempOrders = new Order[](orders.length);
-        for(uint256 index = 0; index < orders.length; index++){
-            Order memory order = orders[index];
-            if(order.status == EOrderStatus.Open){
-                tempOrders[count] = order;
-                count++;
-            }
-        }
-        
-        Order[] memory result = new Order[](count);
-        for(uint256 index = 0; index < count; index++){
-            result[index] = tempOrders[index];
-        }
-        
-        return result;
-    }
-    
-    /**
      * @dev Get buying orders that can be filled with `price` of `token0Address`
      */ 
-    function getOpenBuyOrdersForPrice(address token0Address, address token1Address, uint256 price, uint256 quantity) public view 
-    returns(Order[] memory, uint256[] memory){
+    function getOpenBuyOrdersForPrice(
+        address token0Address,
+        address token1Address,
+        uint256 price,
+        uint256 quantity)
+    public view returns(Order[] memory, uint256[] memory){
         Order[] memory orders = _buyOrders[token0Address][token1Address];
         if(orders.length == 0)
             return (orders, new uint256[](0));
@@ -150,37 +124,6 @@ contract AvatarArtExchange is Runnable, ReentrancyGuard, IAvatarArtExchange{
         }
         
         return (result, indexs);
-    }
-    
-    function getOrders(address token0Address, address token1Address, EOrderType orderType) public view returns(Order[] memory){
-        return orderType == EOrderType.Buy ? _buyOrders[token0Address][token1Address] : _sellOrders[token0Address][token1Address];
-    }
-    
-    function getUserOrders(address token0Address, address token1Address, address account, EOrderType orderType) public view returns(Order[] memory){
-        Order[] memory orders;
-        if(orderType == EOrderType.Buy)
-            orders = _buyOrders[token0Address][token1Address];
-        else
-            orders = _sellOrders[token0Address][token1Address];
-        if(orders.length == 0)
-            return orders;
-        
-        uint256 count = 0;
-        Order[] memory tempOrders = new Order[](orders.length);
-        for(uint256 index = 0; index < orders.length; index++){
-            Order memory order = orders[index];
-            if(order.owner == account){
-                tempOrders[count] = order;
-                count++;
-            }
-        }
-        
-        Order[] memory result = new Order[](count);
-        for(uint256 index = 0; index < count; index++){
-            result[index] = tempOrders[index];
-        }
-        
-        return result;
     }
     
     /**

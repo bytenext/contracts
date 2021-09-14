@@ -118,7 +118,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
     /**
      * @dev See {IAvatarArtMarketplace.withdrawNft(tokenId);}
      */
-    function withdrawNft(uint256 tokenId) public override{
+    function withdrawNft(uint256 tokenId) public override nonReentrant{
         TokenInfo storage tokenInfo = _tokenInfos[tokenId];
         require(tokenInfo.tokenOwner == _msgSender(), "Forbidden");
         require(tokenInfo.price == 0, "NFT is being sold");

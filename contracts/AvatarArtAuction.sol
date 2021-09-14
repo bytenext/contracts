@@ -53,13 +53,20 @@ contract AvatarArtAuction is AvatarArtBase{
      *  2. Add new auction
      *  3. Transfer NFT to contract
      */ 
-    function createAuction(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price) external onlyAdmin returns(bool){
+    function createAuction(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price, bool fromContract) external onlyAdmin returns(bool){
         require(_now() <= startTime, "Start time is invalid");
         require(startTime < endTime, "Time is invalid");
         require(_priceSteps[price] > 0, "Price step is not setup");
         
-        address tokenOwner = _avatarArtNFT.ownerOf(tokenId);
-        _avatarArtNFT.safeTransferFrom(tokenOwner, address(this), tokenId);
+        address tokenOwner = address(0);
+        if(fromContract){
+            tokenOwner = _auctions[tokenId].tokenOwner;
+            require(tokenOwner != address(0), "Token owner is zero address");
+        }
+        else{
+            tokenOwner = _avatarArtNFT.ownerOf(tokenId);
+            _avatarArtNFT.safeTransferFrom(tokenOwner, address(this), tokenId);
+        }
         
         _auctions[tokenId] = Auction(startTime, endTime, tokenOwner, price, address(0), address(0), EAuctionStatus.Open);
         
@@ -93,21 +100,15 @@ contract AvatarArtAuction is AvatarArtBase{
         Auction storage auction = _auctions[tokenId];
         require(auction.status == EAuctionStatus.Open && auction.endTime < _now());
 
-        address nftReceipentAddress = auction.tokenOwner;
-        
-        //If have auction
+        //If have auction, pay fee types and quantity for seller
         if(auction.winner != address(0)){
-            //Pay fee types and quantity for seller
             require(_processFee(tokenId, auction.price, auction.affiliate, auction.tokenOwner), "Can not pay fee");
-            nftReceipentAddress = auction.winner;
+            auction.tokenOwner = auction.winner;
         }
-
-        //Transfer AvatarArtNFT from contract to winner
-        _avatarArtNFT.safeTransferFrom(address(this), nftReceipentAddress, tokenId);
         
         auction.status = EAuctionStatus.Completed;
 
-        emit Distributed(tokenId, nftReceipentAddress, _now());
+        emit Distributed(tokenId, auction.winner, _now());
         return true;
     }
     
@@ -192,6 +193,21 @@ contract AvatarArtAuction is AvatarArtBase{
 
         emit TokenWithdrawn(tokenAddress);
     }
+
+    /**
+     * @dev User withdraws NFT from contract
+     */
+    function withdrawNft(uint256 tokenId) public nonReentrant{
+        Auction storage auction = _auctions[tokenId];
+        require(auction.status == EAuctionStatus.Completed, "Forbidden");
+        require(auction.tokenOwner == _msgSender(), "NFT is being sold");
+
+        //Transfer AvatarArtNFT from contract to winner
+        _avatarArtNFT.safeTransferFrom(address(this), _msgSender(), tokenId);
+
+        auction.tokenOwner = address(0);
+        emit NftWithdrawn(tokenId, _msgSender());
+    } 
     
     event NewAuctionCreated(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price, uint256 time);
     event AuctionPriceUpdated(uint256 tokenId, uint256 price, uint256 time);
@@ -200,5 +216,5 @@ contract AvatarArtAuction is AvatarArtBase{
     event NewPlaceSetted(uint256 tokenId, address account, uint256 price, uint256 time);
     event Distributed(uint256 tokenId, address winner, uint256 time);
     event TokenWithdrawn(address tokenAddress);
-
+    event NftWithdrawn(uint256 tokenId, address account);
 }
