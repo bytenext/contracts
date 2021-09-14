@@ -100,7 +100,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
         tokenInfo.tokenOwner = _msgSender();
         tokenInfo.price = 0;
 
-        emit Purchased(tokenId, _msgSender(), tokenInfo.tokenOwner, tokenPrice, _now());
+        emit Purchased(tokenId, _msgSender(), tokenOwner, tokenPrice, _now());
         
         return tokenPrice;
     }
