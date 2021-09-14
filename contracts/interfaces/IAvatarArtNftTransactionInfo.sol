@@ -26,6 +26,11 @@ interface IAvatarArtNftTransactionInfo is IFeeInfo{
     function _avatarArtPlatformAddress() external view returns(address);
 
     /**
+    * @dev Get floor price percent of specific NFT tokenId
+    **/
+    function _floorPrices(uint256 tokenId) external view returns(uint256);
+
+    /**
     * @dev Get fee info of specific NFT tokenId
     **/
     function getFee(uint256 tokenId) external view returns(FeeInfo memory);

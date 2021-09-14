@@ -38,6 +38,9 @@ contract AvatarArtAuction is AvatarArtBase{
     //AUCTION 
     //Mapping tokenId and Auction list
     mapping(uint256 => Auction) public _auctions;       //List of auction
+
+    //Mapping price and step price
+    mapping(uint256 => uint256) public _priceSteps;
     
     constructor(address avatarArtNFTAddress, address transactionInfoAddress, address adminAddress) 
         AvatarArtBase(avatarArtNFTAddress, transactionInfoAddress, adminAddress){}
@@ -53,6 +56,7 @@ contract AvatarArtAuction is AvatarArtBase{
     function createAuction(uint256 tokenId, uint256 startTime, uint256 endTime, uint256 price) external onlyAdmin returns(bool){
         require(_now() <= startTime, "Start time is invalid");
         require(startTime < endTime, "Time is invalid");
+        require(_priceSteps[price] > 0, "Price step is not setup");
         
         address tokenOwner = _avatarArtNFT.ownerOf(tokenId);
         _avatarArtNFT.safeTransferFrom(tokenOwner, address(this), tokenId);
@@ -120,6 +124,7 @@ contract AvatarArtAuction is AvatarArtBase{
         Auction storage auction = _auctions[tokenId];
         require(auction.status == EAuctionStatus.Open && auction.startTime <= _now() && auction.endTime >= _now(), "Invalid auction");
         require(price > auction.price, "Invalid price");
+        require(price >= auction.price + _priceSteps[auction.price], "Fail for price step");
 
         IERC20 paymentToken = IERC20(_transactionInfo._paymentTokenAddresses(tokenId));
         //Transfer payment token to contract
@@ -139,10 +144,10 @@ contract AvatarArtAuction is AvatarArtBase{
         return true;
     }
     
-     /**
+    /**
      * @dev {See - IAvatarArtAuction.updateAuctionPrice}
      * 
-     */ 
+    */ 
     function updateAuctionPrice(uint256 tokenId, uint256 price) external onlyAdmin returns(bool){
         require(tokenId > 0, "Invalid tokenId");
         Auction storage auction = _auctions[tokenId];
@@ -166,6 +171,16 @@ contract AvatarArtAuction is AvatarArtBase{
         
         emit AuctionTimeUpdated(tokenId, startTime, endTime, _now());
         return true;
+    }
+
+    /**
+     * @dev Set price step
+     */
+    function setPriceStep(uint256 price, uint256 step) public onlyOwner{
+        require(price > 0, "Price is 0");
+        require(step > 0, "Step is 0");
+
+        _priceSteps[price] = step;
     }
 
     /**

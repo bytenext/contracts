@@ -12,9 +12,19 @@ interface IAvatarArtMarketplace{
      * @dev Create a sell order to sell NFT
      */
     function createSellOrder(uint tokenId, uint price) external returns(bool);
+
+    /**
+     * @dev User creates a selling order to sell NFT
+     */
+    function userCreateSellingOrder(uint tokenId, uint price) external returns(bool);
     
     /**
      * @dev User purchases a NFT
      */ 
     function purchase(uint tokenId, address affiliate) external returns(uint);
+
+    /**
+     * @dev User withdraws their NFT by `tokenId` from contract
+     */ 
+    function withdrawNft(uint256 tokenId) external;
 }

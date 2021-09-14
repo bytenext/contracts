@@ -49,18 +49,33 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
         
         return true;
     }
+
+    /**
+     * @dev See {IAvatarArtMarketplace.userCreateSellingOrder(tokenId, price);}
+     */
+    function userCreateSellingOrder(uint256 tokenId, uint256 price) external override nonReentrant returns(bool){
+        TokenInfo storage tokenInfo = _tokenInfos[tokenId];
+        //Validate
+        require(tokenInfo.tokenOwner == _msgSender(), "Can not create sell order for this token");
+        require(tokenInfo.price == 0, "This NFT is being sold");
+        
+        tokenInfo.price = price;
+        
+        emit NewSellOrderCreated(tokenId, _msgSender(), price, _now());
+        
+        return true;
+    }
     
     /**
      * @dev User that created sell order can cancel that order
+     * When user cancels a selling order, this NFT will be removed from marketplace and
+     * transferred to user wallet
      */ 
     function cancelSellOrder(uint256 tokenId) external override nonReentrant returns(bool){
-        require(_tokenInfos[tokenId].tokenOwner == _msgSender(), "Forbidden to cancel sell order");
+        TokenInfo storage tokenInfo = _tokenInfos[tokenId];
+        require(tokenInfo.tokenOwner == _msgSender(), "Forbidden to cancel sell order");
 
-        //Transfer AvatarArtNFT from contract to sender
-        _avatarArtNFT.safeTransferFrom(address(this), _msgSender(), tokenId);
-        
-        _tokenInfos[tokenId].tokenOwner = address(0);
-        _tokenInfos[tokenId].price = 0;
+        tokenInfo.price = 0;
 
         emit SellingOrderCanceled(tokenId, _msgSender(), _now());
         
@@ -74,6 +89,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
         TokenInfo storage tokenInfo = _tokenInfos[tokenId];
         address tokenOwner = tokenInfo.tokenOwner;
         require(tokenOwner != address(0),"Token has not been added");
+        require(tokenInfo.price > 0, "Token has not being sold");
         
         uint256 tokenPrice = tokenInfo.price;
         
@@ -81,10 +97,7 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
             require(_processFeeFromSender(tokenId, tokenPrice, affiliate, tokenOwner, _msgSender()), "Can not pay fee");
         }
         
-        //Transfer AvatarArtNFT from contract to sender
-        _avatarArtNFT.transferFrom(address(this),_msgSender(), tokenId);
-        
-        tokenInfo.tokenOwner = address(0);
+        tokenInfo.tokenOwner = _msgSender();
         tokenInfo.price = 0;
 
         emit Purchased(tokenId, _msgSender(), tokenInfo.tokenOwner, tokenPrice, _now());
@@ -101,10 +114,25 @@ contract AvatarArtMarketplace is AvatarArtBase, IAvatarArtMarketplace{
 
         emit TokenWithdrawn(tokenAddress);
     }
+
+    /**
+     * @dev See {IAvatarArtMarketplace.withdrawNft(tokenId);}
+     */
+    function withdrawNft(uint256 tokenId) public override{
+        TokenInfo storage tokenInfo = _tokenInfos[tokenId];
+        require(tokenInfo.tokenOwner == _msgSender(), "Forbidden");
+        require(tokenInfo.price == 0, "NFT is being sold");
+
+        _avatarArtNFT.safeTransferFrom(address(this), _msgSender(), tokenId);
+
+        tokenInfo.tokenOwner = address(0);
+        emit NftWithdrawn(tokenId, _msgSender());
+    }
     
     event NewSellOrderCreated(uint256 tokenId, address indexed seller, uint256 price, uint256 time);
     event Purchased(uint256 tokenId, address buyer,  address seller, uint256 price, uint256 time);
     event SellingOrderCanceled(uint256 tokenId, address account, uint256 time);
     event NewMarketHistory(address buyer, address seller, uint256 price, uint256 time);
     event TokenWithdrawn(address tokenAddress);
+    event NftWithdrawn(uint256 tokenId, address account);
 }

@@ -137,6 +137,31 @@ contract ByteNextRouter{
         TransferHelper.safeTransferETH(to, amountETH);
     }
 
+    // function addLiquidityFromSingleToken(
+    //     address paymentToken,
+    //     uint256 paymentAmount,
+    //     address[] memory pathToTokenA,
+    //     address[] memory pathToTokenB,
+    //     address tokenA,
+    //     address tokenB,
+    //     uint amountADesired,
+    //     uint amountBDesired,
+    //     uint amountAMin,
+    //     uint amountBMin,
+    //     address to,
+    //     uint deadline
+    // ) external ensure(deadline) returns (uint amountA, uint amountB, uint liquidity) {
+    //     if(payment)
+
+
+
+    //     (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, amountAMin, amountBMin);
+    //     address pair = ByteNextLibrary.pairFor(factory, tokenA, tokenB);
+    //     TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
+    //     TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
+    //     liquidity = IByteNextPair(pair).mint(to);
+    // }
+
     // **** SWAP ****
     // requires the initial amount to have already been sent to the first pair
     function _swap(uint[] memory amounts, address[] memory path, address _to) internal {

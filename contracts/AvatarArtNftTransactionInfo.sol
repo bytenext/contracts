@@ -23,6 +23,8 @@ contract AvatarArtNftTransactionInfo is Ownable, IAvatarArtNftTransactionInfo{
     //Mapping NFT tokenId and payment token address
     mapping(uint256 => address) override public _paymentTokenAddresses;
 
+    mapping(uint256 => uint256) override public _floorPrices;
+
     address override public _avatarArtPlatformAddress;
 
     constructor(address avatarArtPlatformAddress){
