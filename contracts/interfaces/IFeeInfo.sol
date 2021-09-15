@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 interface IFeeInfo{
     //Store fee infor for NFT. Fee is calculated by percent and multipled by 1000

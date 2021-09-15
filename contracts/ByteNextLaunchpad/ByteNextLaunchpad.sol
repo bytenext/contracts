@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IByteNextLaunchpad.sol";
 import ".././core/Runnable.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 /**
 * @dev Contract allows whitelisted users to join IDO with specific project

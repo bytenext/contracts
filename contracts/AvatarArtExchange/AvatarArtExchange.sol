@@ -5,7 +5,7 @@ import "./IAvatarArtExchange.sol";
 import ".././core/Runnable.sol";
 import ".././core/ReentrancyGuard.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.7;
 
 /**
 * @dev Contract is used to exchange token as order book 
