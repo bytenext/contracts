@@ -6,14 +6,12 @@ import NonFungibleToken from "./NonFungibleToken.cdc"
 pub contract AvatarArtNFT: NonFungibleToken {
 
     // Events
-    //
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
     pub event Minted(id: UInt64, typeID: UInt64)
 
     // Named Paths
-    //
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
@@ -193,4 +191,3 @@ pub contract AvatarArtNFT: NonFungibleToken {
         emit ContractInitialized()
 	}
 }
- 
