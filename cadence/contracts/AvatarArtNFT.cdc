@@ -1,4 +1,5 @@
-import NonFungibleToken from "./NonFungibleToken.cdc"
+//import NonFungibleToken from "./NonFungibleToken.cdc"
+import NonFungibleToken from 0x03
 
 // AvatarArtNFT
 // NFT items for AvatarArt!
@@ -9,7 +10,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     pub event ContractInitialized()
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
-    pub event Minted(id: UInt64, typeID: UInt64)
+    pub event Minted(id: UInt64)
 
     // Named Paths
     pub let CollectionStoragePath: StoragePath
@@ -148,12 +149,12 @@ pub contract AvatarArtNFT: NonFungibleToken {
 		// and deposit it in the recipients collection using their collection reference
         //
 		pub fun mintNFT(recipient: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}) {
-            emit Minted(id: AvatarArtNFT.totalSupply)
+      emit Minted(id: AvatarArtNFT.totalSupply)
 
 			// deposit it in the recipient's account using their reference
 			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: AvatarArtNFT.totalSupply))
 
-            AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + (1 as UInt64)
+      AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + (1 as UInt64)
 		}
 	}
 
@@ -165,7 +166,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     //
     pub fun fetch(_ from: Address, itemID: UInt64): &AvatarArtNFT.NFT? {
         let collection = getAccount(from)
-            .getCapability(AvatarArtNFT.CollectionPublicPath)!
+            .getCapability(AvatarArtNFT.CollectionPublicPath)
             .borrow<&AvatarArtNFT.Collection{AvatarArtNFT.AvatarArtNFTCollectionPublic}>()
             ?? panic("Couldn't get collection")
         // We trust AvatarArtNFT.Collection.borowAvatarArtNFT to get the correct itemID

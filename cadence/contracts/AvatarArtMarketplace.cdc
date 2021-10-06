@@ -1,5 +1,10 @@
-import FungibleToken from "./FungibleToken.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc";
+//import FungibleToken from "./FungibleToken.cdc"
+//import NonFungibleToken from "./NonFungibleToken.cdc";
+
+import BNU from 0x02;
+import FungibleToken from 0x01;
+import NonFungibleToken from 0x03;
+import AvatarArtNFT from 0x04;
 
 // The Marketplace contract is a sample implementation of an NFT Marketplace on Flow.
 //
@@ -11,9 +16,6 @@ pub contract AvatarArtMarketplace {
   // Event that is emitted when a new NFT is put up for sale
   pub event ForSale(id: UInt64, price: UFix64)
 
-  // Event that is emitted when the price of an NFT changes
-  pub event PriceChanged(id: UInt64, newPrice: UFix64)
-
   // Event that is emitted when a token is purchased
   pub event TokenPurchased(id: UInt64, price: UFix64)
 
@@ -24,7 +26,7 @@ pub contract AvatarArtMarketplace {
   // that only exposes the methods that are supposed to be public
   //
   pub resource interface SalePublic {
-    pub fun purchase(tokenID: UInt64, recipient: &AnyResource{NonFungibleToken.NFTReceiver}, buyTokens: @FungibleToken.Vault)
+    pub fun purchase(tokenID: UInt64, recipient: &AnyResource{NonFungibleToken.Receiver}, buyTokens: @BNU.Vault)
     pub fun idPrice(tokenID: UInt64): UFix64?
     pub fun getIDs(): [UInt64]
   }
@@ -76,20 +78,13 @@ pub contract AvatarArtMarketplace {
         emit ForSale(id: id, price: price)
     }
 
-    // changePrice changes the price of a token that is currently for sale
-    pub fun changePrice(tokenID: UInt64, newPrice: UFix64) {
-        self.prices[tokenID] = newPrice
-
-        emit PriceChanged(id: tokenID, newPrice: newPrice)
-    }
-
     // purchase lets a user send tokens to purchase an NFT that is for sale
-    pub fun purchase(tokenID: UInt64, recipient: &AnyResource{NonFungibleToken.NFTReceiver}, buyTokens: @FungibleToken.Vault) {
+    pub fun purchase(tokenID: UInt64, recipient: &AnyResource{NonFungibleToken.Receiver}, buyTokens: @BNU.Vault) {
         pre {
             self.forSale[tokenID] != nil && self.prices[tokenID] != nil:
                 "No token matching this ID for sale!"
             buyTokens.balance >= (self.prices[tokenID] ?? 0.0):
-                "Not enough tokens to by the NFT!"
+                "Not enough tokens to buy the NFT!"
         }
 
         // get the value out of the optional

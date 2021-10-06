@@ -1,4 +1,5 @@
-import FungibleToken from "./FungibleToken.cdc"
+//import FungibleToken from "./FungibleToken.cdc"
+import FungibleToken from 0x01;
 
 pub contract BNU: FungibleToken {
 
@@ -67,34 +68,7 @@ pub contract BNU: FungibleToken {
     pub resource interface MinterProxyPublic {
         pub fun setMinterCapability(cap: Capability<&Minter>)
     }
-
-    pub resource MinterProxy: MinterProxyPublic {
-
-        // access(self) so nobody else can copy the capability and use it.
-        access(self) var minterCapability: Capability<&Minter>?
-
-        // Anyone can call this, but only the admin can create Minter capabilities,
-        // so the type system constrains this to being called by the admin.
-        pub fun setMinterCapability(cap: Capability<&Minter>) {
-            self.minterCapability = cap
-        }
-
-        pub fun mintTokens(amount: UFix64): @BNU.Vault {
-            return <- self.minterCapability!
-            .borrow()!
-            .mintTokens(amount:amount)
-        }
-
-        init() {
-            self.minterCapability = nil
-        }
-
-    }
-
-    pub fun createMinterProxy(): @MinterProxy {
-        return <- create MinterProxy()
-    }
-
+    
     pub resource Administrator {
         pub fun createNewMinter(): @Minter {
             emit MinterCreated()
