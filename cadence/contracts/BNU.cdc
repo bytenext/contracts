@@ -12,12 +12,6 @@ pub contract BNU: FungibleToken {
     // The storage path for the admin resource
     pub let AdminStoragePath: StoragePath
 
-    // The storage Path for minters' MinterProxy
-    pub let MinterProxyStoragePath: StoragePath
-
-    // The public path for minters' MinterProxy capability
-    pub let MinterProxyPublicPath: PublicPath
-
     // Total supply of bnu in existence
     pub var totalSupply: UFix64
 
@@ -64,10 +58,6 @@ pub contract BNU: FungibleToken {
             return <-create Vault(balance: amount)
         }
     }
-
-    pub resource interface MinterProxyPublic {
-        pub fun setMinterCapability(cap: Capability<&Minter>)
-    }
     
     pub resource Administrator {
         pub fun createNewMinter(): @Minter {
@@ -78,8 +68,6 @@ pub contract BNU: FungibleToken {
 
     init() {
         self.AdminStoragePath = /storage/bnuAdmin
-        self.MinterProxyPublicPath = /public/bnuMinterProxy
-        self.MinterProxyStoragePath = /storage/bnuMinterProxy
 
         self.totalSupply = 0.0
 
@@ -88,15 +76,7 @@ pub contract BNU: FungibleToken {
         // Emit an event that shows that the contract was initialized
         emit TokensInitialized(initialSupply: 0.0)
 
-        let minter <- admin.createNewMinter()
-
-        let mintedVault <- minter.mintTokens(amount: 1000000.0)
-
-        destroy minter
-
         self.account.save(<-admin, to: self.AdminStoragePath)
-
-        self.account.save(<-mintedVault, to: /storage/bnuVault)
 
         self.account.link<&BNU.Vault{FungibleToken.Receiver}>(
             /public/bnuReceiver,
