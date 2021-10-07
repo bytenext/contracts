@@ -10,7 +10,9 @@ pub contract BNU: FungibleToken {
     pub event MinterCreated()
 
     // The storage path for the admin resource
-    pub let AdminStoragePath: StoragePath
+    pub let AdminStoragePath: StoragePath;
+    pub let StorageVaultPath: StoragePath;
+    pub let ReceiverPath: PublicPath;
 
     // Total supply of bnu in existence
     pub var totalSupply: UFix64
@@ -68,7 +70,8 @@ pub contract BNU: FungibleToken {
 
     init() {
         self.AdminStoragePath = /storage/bnuAdmin
-
+        self.ReceiverPath = /public/bnuReceiver;
+        self.StorageVaultPath = /storage/bnuVault;
         self.totalSupply = 0.0
 
         let admin <- create Administrator()
