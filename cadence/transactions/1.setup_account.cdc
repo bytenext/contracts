@@ -22,8 +22,15 @@ transaction {
         userAccount.link<&BNU.Vault{FungibleToken.Receiver, FungibleToken.Balance}>(bnuReceiverPath, target: bnuVaultPath);
 
         //Create NFT collection and store
-        let collection <- AvatarArtNFT.createEmptyCollection();
-        userAccount.save<@AvatarArtNFT.Collection>(<- collection, to: avatarArtNFTCollectionPath);
-        userAccount.link<&{NonFungibleToken.NFTReceiver}>(avatarArtNFTReceiverPath, target: avatarArtNFTCollectionPath);
+        //Create NFT collection and store
+        let collection: @AvatarArtNFT.Collection <- AvatarArtNFT.createEmptyCollection();
+        userAccount.save<@AvatarArtNFT.Collection>(<- collection, to: AvatarArtNFT.CollectionStoragePath);
+        userAccount.link<&{NonFungibleToken.Receiver}>(AvatarArtNFT.ReceiverPublicPath, target: AvatarArtNFT.CollectionStoragePath);
+        log("Setup done");
+    }
+
+    post{
+        getAccount(0x03).getCapability<&{NonFungibleToken.Receiver}>(AvatarArtNFT.ReceiverPublicPath)
+                .check(): "Can not create capability"
     }
 }

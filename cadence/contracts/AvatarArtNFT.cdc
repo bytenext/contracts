@@ -16,6 +16,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
+    pub let ReceiverPublicPath: PublicPath;
 
     // totalSupply
     // The total number of AvatarArtNFT that have been minted
@@ -134,7 +135,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     // createEmptyCollection
     // public function that anyone can call to create a new empty collection
     //
-    pub fun createEmptyCollection(): @NonFungibleToken.Collection {
+    pub fun createEmptyCollection(): @Collection {
         return <- create Collection()
     }
 
@@ -181,6 +182,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
         self.CollectionStoragePath = /storage/avatarArtNFTCollection
         self.CollectionPublicPath = /public/avatarArtNFTCollection
         self.MinterStoragePath = /storage/avatarArtNFTMinter
+        self.ReceiverPublicPath = /public/avatarArtReceiver;
 
         // Initialize the total supply
         self.totalSupply = 0
