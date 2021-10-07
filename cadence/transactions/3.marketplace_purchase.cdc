@@ -19,15 +19,15 @@ transaction (tokenId: UInt64, sellerAccountAddress: Address, affiliateAddress: A
     let authorTokens: @BNU.Vault;
     let sellerTokens: @BNU.Vault;
 
-    let collectionRef: &{NonFungibleToken.Receiver}
+    let buyer: Address;
 
     prepare(buyerAccount: AuthAccount) {
+        self.buyer = buyer.address;
         //Get token price
         self.publicSaleCollection = getAccount(sellerAccountAddress)
                               .getCapability<&{AvatarArtMarketplace.SalePublic}>(AvatarArtMarketplace.CollectionCapabilityPath)
                               .borrow() ?? panic("Can not borrow a reference to the public sale collection capability");
         let price = self.publicSaleCollection.idPrice(tokenId: tokenId)!;
-
 
         let publicAccount = getAccount(0x01)
         let feeInfoReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
@@ -60,7 +60,6 @@ transaction (tokenId: UInt64, sellerAccountAddress: Address, affiliateAddress: A
         self.platformTokens <- vaultRef.withdraw(amount: platformFee) as! @BNU.Vault;
         self.authorTokens <- vaultRef.withdraw(amount: authorFee) as! @BNU.Vault;
         self.sellerTokens <- vaultRef.withdraw(amount: sellerFee) as! @BNU.Vault;
-        self.collectionRef = buyerAccount.borrow<&{NonFungibleToken.Receiver}>(from: /storage/NFTCollection)!
     }
 
     execute {
@@ -76,7 +75,7 @@ transaction (tokenId: UInt64, sellerAccountAddress: Address, affiliateAddress: A
         // to your NFT collection and giving them the tokens to buy it
         saleRef.purchase(
             tokenId: tokenId,
-            recipient: self.collectionRef,
+            buyer: self.buyer,
             affiliateAddress: affiliateAddress,
             affiliateTokens: <-self.affiliateTokens,
             storingTokens: <-self.storingTokens,

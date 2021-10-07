@@ -7,18 +7,13 @@ import NonFungibleToken from 0x03;
 import AvatarArtNFT from 0x04;
 import AvatarArtTransactionInfo from 0x01;
 
-// The Marketplace contract is a sample implementation of an NFT Marketplace on Flow.
-//
-// This contract allows users to put their NFTs up for sale. Other users
-// can purchase these NFTs with fungible tokens.
-
 pub contract AvatarArtMarketplace {
     pub let CollectionStoragePath: StoragePath;
     pub let CollectionCapabilityPath: PublicPath;
     pub let AdminSaleCollectionStoragePath: StoragePath;
 
   // Event that is emitted when a new NFT is put up for sale
-  pub event SellingOrderCreated(id: UInt64, price: UFix64, owner: Address);
+  pub event SellingOrderCreated(tokenId: UInt64, price: UFix64, owner: Address);
 
   // Event that is emitted when a token is purchased
   pub event TokenPurchased(id: UInt64, price: UFix64, time: UFix64)
@@ -42,7 +37,8 @@ pub contract AvatarArtMarketplace {
         authorTokens: @BNU.Vault,
         sellerTokens: @BNU.Vault)
     pub fun idPrice(tokenId: UInt64): UFix64?
-    pub fun getIDs(): [UInt64]
+    pub fun getIDs(): [UInt64];
+    pub fun getOwner(tokenId: UInt64): Address;
   }
 
   // SaleCollection
@@ -51,46 +47,38 @@ pub contract AvatarArtMarketplace {
   // where others can send fungible tokens to purchase it
   //
   pub resource SaleCollection: SalePublic {
-
     // Dictionary of the NFTs that the user is putting up for sale
-    pub var forSale: @{UInt64: AvatarArtNFT.NFT}
+    pub var sellings: {UInt64: Bool}
 
     // Dictionary of the prices for each NFT by ID
     pub var prices: {UInt64: UFix64}
     pub var owners: {UInt64: Address};
 
     init () {
-        self.forSale <- {};
+        self.sellings = {};
         self.prices = {};
         self.owners = {};
     }
 
     // Seller cancels selling order by removing tokenId from collection
-    pub fun withdraw(tokenId: UInt64, owner: Address): @AvatarArtNFT.NFT {
+    pub fun withdraw(tokenId: UInt64, owner: Address){
         pre{
             self.owners[tokenId] == owner: "Forbidden to withdraw";
         }
         // remove the price
         self.prices.remove(key: tokenId);
         self.owners.remove(key: tokenId);
-        // remove and return the token
-        let token <- self.forSale.remove(key: tokenId) ?? panic("missing NFT")
-        return <-token
+        self.sellings.remove(key: tokenId);
     }
 
     // listForSale lists an NFT for sale in this collection
-    pub fun createSellingOrder(token: @AvatarArtNFT.NFT, price: UFix64, owner: Address) {
-        let id = token.id
-
+    pub fun createSellingOrder(tokenId: UInt64, price: UFix64, owner: Address) {
         // store the price in the price array
-        self.prices[id] = price
-        self.owners[id] = owner;
+        self.prices[tokenId] = price
+        self.owners[tokenId] = owner;
+        self.sellings[tokenId] = true;
 
-        // put the NFT into the the forSale dictionary
-        let oldToken <- self.forSale[id] <- token
-        destroy oldToken
-
-        emit SellingOrderCreated(id: id, price: price, owner: owner);
+        emit SellingOrderCreated(tokenId: tokenId, price: price, owner: owner);
     }
 
     // purchase lets a user send tokens to purchase an NFT that is for sale
@@ -107,7 +95,7 @@ pub contract AvatarArtMarketplace {
             sellerTokens: @BNU.Vault
        ) {
         pre {
-            self.forSale[tokenId] != nil && self.prices[tokenId] != nil:
+            self.sellings[tokenId] == true && self.prices[tokenId] != nil:
                 "No token matching this ID for sale!"
         }
 
@@ -240,7 +228,11 @@ pub contract AvatarArtMarketplace {
 
     // getIDs returns an array of token IDs that are for sale
     pub fun getIDs(): [UInt64] {
-        return self.forSale.keys
+        return self.sellings.keys;
+    }
+
+    pub fun getOwner(tokenId: UInt64): Address{
+        return self.owners[tokenId]!;
     }
 
     access(self) fun transferToken(receipent: Address, balanceVault: @BNU.Vault){
@@ -251,18 +243,8 @@ pub contract AvatarArtMarketplace {
     }
 
     destroy() {
-        destroy self.forSale;
+        //Do nothing
     }
-  }
-
-  // createCollection returns a new collection resource to the caller
-  access(account) fun createSellingOrder(
-    price: UFix64,
-    token: @AvatarArtNFT.NFT,
-    owner: Address){
-        let saleCollection = self.account.borrow<&SaleCollection>(from: self.AdminSaleCollectionStoragePath) 
-            ?? panic("Can not borrow sale collection");
-        saleCollection.createSellingOrder(token: <- token, price: price, owner: owner);
   }
 
     init(){
