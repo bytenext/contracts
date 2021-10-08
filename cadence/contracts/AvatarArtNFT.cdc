@@ -149,13 +149,13 @@ pub contract AvatarArtNFT: NonFungibleToken {
         // Mints a new NFT with a new ID
 		// and deposit it in the recipients collection using their collection reference
         //
-		pub fun mintNFT(recipient: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}) {
-      emit Minted(id: AvatarArtNFT.totalSupply)
+		pub fun mintNFT(tokenId: UInt64, recipient: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}) {
+            emit Minted(tokenId: AvatarArtNFT.totalSupply)
 
 			// deposit it in the recipient's account using their reference
-			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: AvatarArtNFT.totalSupply))
+			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: tokenId))
 
-      AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + (1 as UInt64)
+            AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + (1 as UInt64)
 		}
 	}
 

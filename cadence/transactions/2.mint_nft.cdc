@@ -1,7 +1,7 @@
 import NonFungibleToken from 0x03
 import AvatarArtNFT from 0x04
 
-transaction (recipient: Address) {
+transaction (recipient: Address, tokenId: UInt64) {
     // The reference to the collection that will be receiving the NFT
     let receiverRef: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}
 
@@ -22,9 +22,7 @@ transaction (recipient: Address) {
     }
 
     execute {
-        // Use the minter reference to mint an NFT, which deposits
-        // the NFT into the collection that is sent as a parameter.
-        self.minterReference.mintNFT(recipient: self.receiverRef)
+        self.minterReference.mintNFT(tokenId: tokenId, recipient: self.receiverRef)
         log("NFT minted");
     }
 }
