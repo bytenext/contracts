@@ -1,5 +1,5 @@
 //import NonFungibleToken from "./NonFungibleToken.cdc"
-import NonFungibleToken from 0x03
+import NonFungibleToken from 0x01
 
 // AvatarArtNFT
 // NFT items for AvatarArt!
@@ -8,9 +8,9 @@ pub contract AvatarArtNFT: NonFungibleToken {
 
     // Events
     pub event ContractInitialized()
-    pub event Withdraw(id: UInt64, from: Address?)
-    pub event Deposit(id: UInt64, to: Address?)
-    pub event Minted(id: UInt64)
+    pub event Withdraw(tokenId: UInt64, from: Address?)
+    pub event Deposit(tokenId: UInt64, to: Address?)
+    pub event Minted(tokenId: UInt64)
 
     // Named Paths
     pub let CollectionStoragePath: StoragePath
@@ -60,7 +60,6 @@ pub contract AvatarArtNFT: NonFungibleToken {
     pub resource Collection: AvatarArtNFTCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
         // dictionary of NFT conforming tokens
         // NFT is a resource type with an `UInt64` ID field
-        //
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
 
         // withdraw
@@ -69,7 +68,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
-            emit Withdraw(id: token.id, from: self.owner?.address)
+            emit Withdraw(tokenId: token.id, from: self.owner?.address)
 
             return <-token
         }
@@ -86,7 +85,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
             // add the new token to the dictionary which removes the old one
             let oldToken <- self.ownedNFTs[id] <- token
 
-            emit Deposit(id: id, to: self.owner?.address)
+            emit Deposit(tokenId: id, to: self.owner?.address)
 
             destroy oldToken
         }
@@ -150,7 +149,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
 		// and deposit it in the recipients collection using their collection reference
         //
 		pub fun mintNFT(tokenId: UInt64, recipient: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}) {
-            emit Minted(tokenId: AvatarArtNFT.totalSupply)
+            emit Minted(tokenId: tokenId)
 
 			// deposit it in the recipient's account using their reference
 			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: tokenId))
@@ -179,9 +178,9 @@ pub contract AvatarArtNFT: NonFungibleToken {
     //
 	init() {
         // Set our named paths
-        self.CollectionStoragePath = /storage/avatarArtNFTCollection
-        self.CollectionPublicPath = /public/avatarArtNFTCollection
-        self.MinterStoragePath = /storage/avatarArtNFTMinter
+        self.CollectionStoragePath = /storage/avatarArtNFTCollection;
+        self.CollectionPublicPath = /public/avatarArtNFTCollection;
+        self.MinterStoragePath = /storage/avatarArtNFTMinter;
         self.ReceiverPublicPath = /public/avatarArtReceiver;
 
         // Initialize the total supply

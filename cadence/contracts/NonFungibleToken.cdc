@@ -12,13 +12,13 @@ pub contract interface NonFungibleToken {
     //
     // If the collection is not in an account's storage, `from` will be `nil`.
     //
-    pub event Withdraw(id: UInt64, from: Address?)
+    pub event Withdraw(tokenId: UInt64, from: Address?)
 
     // Event that emitted when a token is deposited to a collection.
     //
     // It indicates the owner of the collection that it was deposited to.
     //
-    pub event Deposit(id: UInt64, to: Address?)
+    pub event Deposit(tokenId: UInt64, to: Address?)
 
     // Interface that the NFTs have to conform to
     //
