@@ -1,11 +1,11 @@
-import AvatarArtTransactionInfo from 0x01
+import AvatarArtTransactionInfo from 0x02
 
-pub fun main(tokenId: UInt64) {
+pub fun main(tokenId: UInt64): AvatarArtTransactionInfo.FeeInfoItem? {
     let publicAccount = getAccount(0x01)
 
-    let transactionAddressReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>(AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath)
+    let feeInfoReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
                             .borrow()
                             ?? panic("Could not borrow a reference to the hello capability");
 
-    log(transactionAddressReference.getAddress(tokenId: tokenId));
+    return feeInfoReference.getFee(tokenId: tokenId);
 }
