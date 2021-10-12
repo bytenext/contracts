@@ -8,7 +8,7 @@ pub contract AvatarArtTransactionInfo {
     pub let TransactionAddressCapabilityPublicPath: PublicPath;
 
     pub event FeeUpdated(tokenId: UInt64, affiliate: UFix64, storing: UFix64, insurance: UFix64, contractor: UFix64, platform: UFix64, author: UFix64);
-    pub event TransactionAddressUpdated(tokenId: UInt64, storing: Address, insurance: Address, contractor: Address, platform: Address, author: Address);
+    pub event TransactionAddressUpdated(tokenId: UInt64, storing: Address?, insurance: Address?, contractor: Address?, platform: Address?, author: Address?);
     
 
     pub struct FeeInfoItem{
@@ -73,15 +73,19 @@ pub contract AvatarArtTransactionInfo {
         }
     }
     
-    pub struct TransactionAddressItem{
-        pub let storing: Address;
-        pub let insurance: Address;
-        pub let contractor: Address;
-        pub let platform: Address;
-        pub let author: Address;
+    pub struct TransactionRecipientItem{
+        pub let storing: Capability<&{FungibleToken.Receiver}>?;
+        pub let insurance: Capability<&{FungibleToken.Receiver}>?;
+        pub let contractor: Capability<&{FungibleToken.Receiver}>?;
+        pub let platform: Capability<&{FungibleToken.Receiver}>?;
+        pub let author: Capability<&{FungibleToken.Receiver}>?;
 
         // initializer
-        init (_storing: Address, _insurance: Address, _contractor: Address, _platform: Address, _author: Address) {
+        init (_storing: Capability<&{FungibleToken.Receiver}>?, 
+            _insurance: Capability<&{FungibleToken.Receiver}>?, 
+            _contractor: Capability<&{FungibleToken.Receiver}>?, 
+            _platform: Capability<&{FungibleToken.Receiver}>?, 
+            _author: Capability<&{FungibleToken.Receiver}>?) {
             self.storing = _storing;
             self.insurance = _insurance;
             self.contractor = _contractor;
@@ -91,29 +95,50 @@ pub contract AvatarArtTransactionInfo {
     }
 
     pub resource interface PublicTransactionAddress{
-        pub fun getAddress(tokenId: UInt64): TransactionAddressItem?;
+        pub fun getAddress(tokenId: UInt64): TransactionRecipientItem?;
     }
 
     pub resource TransactionAddress : PublicTransactionAddress{
         //Store fee for each NFT
-        pub var addresses: {UInt64: TransactionAddressItem};
+        pub var addresses: {UInt64: TransactionRecipientItem};
 
-        pub fun setAddress(tokenId: UInt64, storing: Address, insurance: Address, contractor: Address, platform: Address, author: Address){
+        pub fun setAddress(tokenId: UInt64,
+            storing: Capability<&{FungibleToken.Receiver}>?, 
+            insurance: Capability<&{FungibleToken.Receiver}>?, 
+            contractor: Capability<&{FungibleToken.Receiver}>?, 
+            platform: Capability<&{FungibleToken.Receiver}>?, 
+            author: Capability<&{FungibleToken.Receiver}>?){
             pre{
                 tokenId > 0: "tokenId parameter is zero";
             }
 
-            self.addresses[tokenId] = TransactionAddressItem(
+            self.addresses[tokenId] = TransactionRecipientItem(
                 _storing: storing,
                 _insurance: insurance,
                 _contractor: contractor,
                 _platform: platform,
                 _author: author);
 
-            emit TransactionAddressUpdated(tokenId: tokenId, storing: storing, insurance: insurance, contractor: contractor, platform: platform, author: author);
+            var storingAddress: Address? = nil;
+            if(storing != nil){storingAddress = storing!.address};
+
+            var insuranceAddress: Address? = nil;
+            if(insurance != nil){insuranceAddress = insurance!.address};
+
+            var contractorAddress: Address? = nil;
+            if(contractor != nil){contractorAddress = contractor!.address};
+
+            var platformAddress: Address? = nil;
+            if(platform != nil){platformAddress = platform!.address};
+
+            var authorAddress: Address? = nil;
+            if(author != nil){authorAddress = author!.address};
+
+            emit TransactionAddressUpdated(tokenId: tokenId, storing: storingAddress,
+                   insurance: insuranceAddress, contractor: contractorAddress, platform: platformAddress, author: authorAddress);
         }
 
-        pub fun getAddress(tokenId: UInt64): TransactionAddressItem?{
+        pub fun getAddress(tokenId: UInt64): TransactionRecipientItem?{
             pre{
                 tokenId > 0: "tokenId parameter is zero";
             }

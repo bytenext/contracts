@@ -13,7 +13,8 @@ transaction (tokenId: UInt64, price: UFix64, seller: Address) {
 
     prepare(adminAccount: AuthAccount) {
         //Get token price
-        self.saleCollectionReference = adminAccount.borrow<&AvatarArtMarketplace.SaleCollection>(from: AvatarArtMarketplace.CollectionStoragePath)
+        self.saleCollectionReference = adminAccount
+            .borrow<&AvatarArtMarketplace.SaleCollection>(from: AvatarArtMarketplace.AdminSaleCollectionStoragePath)
           ?? panic("Can not borrow a reference to the sale collection capability");
     }
 

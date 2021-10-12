@@ -253,6 +253,6 @@ pub contract AvatarArtMarketplace {
         self.AdminSaleCollectionStoragePath = /storage/adminSaleCollection;
 
         self.account.save(<- create SaleCollection(), to: self.AdminSaleCollectionStoragePath);
-        self.account.link<&{AvatarArtMarketplace.SalePublic}>(self.CollectionCapabilityPath, target: self.AdminSaleCollectionStoragePath);
+        self.account.link<&SaleCollection{AvatarArtMarketplace.SalePublic}>(self.CollectionCapabilityPath, target: self.AdminSaleCollectionStoragePath);
     }
 }

@@ -1,258 +1,256 @@
-//import FungibleToken from "./FungibleToken.cdc"
-//import NonFungibleToken from "./NonFungibleToken.cdc";
-
-import BNU from 0x02;
 import FungibleToken from 0x01;
-import NonFungibleToken from 0x03;
-import AvatarArtNFT from 0x04;
+import NonFungibleToken from 0x01;
+import AvatarArtNFT from 0x01;
 import AvatarArtTransactionInfo from 0x01;
 
-pub contract AvatarArtMarketplace {
-    pub let CollectionStoragePath: StoragePath;
-    pub let CollectionCapabilityPath: PublicPath;
-    pub let AdminSaleCollectionStoragePath: StoragePath;
+pub contract AvatarArtAuction {
+    pub event Distributed(tokenId: UInt64, user: Address);
 
-  // Event that is emitted when a new NFT is put up for sale
-  pub event SellingOrderCreated(tokenId: UInt64, price: UFix64, owner: Address);
+    pub let AuctionAdminStoragePath: StoragePath;
+    pub let AuctionPublicPath: PublicPath;
 
-  // Event that is emitted when a token is purchased
-  pub event TokenPurchased(id: UInt64, price: UFix64, time: UFix64)
-
-  // Event that is emitted when a seller withdraws their NFT from the sale
-  pub event SaleWithdrawn(id: UInt64)
-
-  // Interface that users will publish for their Sale collection
-  // that only exposes the methods that are supposed to be public
-  //
-  pub resource interface SalePublic {
-    pub fun purchase(
-        tokenId: UInt64,
-        buyer: Address,
-        affiliateAddress: Address,
-        affiliateTokens: @BNU.Vault,
-        storingTokens: @BNU.Vault,
-        insuranceTokens: @BNU.Vault,
-        contractorTokens: @BNU.Vault,
-        platformTokens: @BNU.Vault,
-        authorTokens: @BNU.Vault,
-        sellerTokens: @BNU.Vault)
-    pub fun idPrice(tokenId: UInt64): UFix64?
-    pub fun getIDs(): [UInt64];
-    pub fun getOwner(tokenId: UInt64): Address;
-  }
-
-  // SaleCollection
-  //
-  // NFT Collection object that allows a user to put their NFT up for sale
-  // where others can send fungible tokens to purchase it
-  //
-  pub resource SaleCollection: SalePublic {
-    // Dictionary of the NFTs that the user is putting up for sale
-    pub var sellings: {UInt64: Bool}
-
-    // Dictionary of the prices for each NFT by ID
-    pub var prices: {UInt64: UFix64}
-    pub var owners: {UInt64: Address};
-
-    init () {
-        self.sellings = {};
-        self.prices = {};
-        self.owners = {};
-    }
-
-    // Seller cancels selling order by removing tokenId from collection
-    pub fun withdraw(tokenId: UInt64, owner: Address){
-        pre{
-            self.owners[tokenId] == owner: "Forbidden to withdraw";
-        }
-        // remove the price
-        self.prices.remove(key: tokenId);
-        self.owners.remove(key: tokenId);
-        self.sellings.remove(key: tokenId);
-    }
-
-    // listForSale lists an NFT for sale in this collection
-    pub fun createSellingOrder(tokenId: UInt64, price: UFix64, owner: Address) {
-        // store the price in the price array
-        self.prices[tokenId] = price
-        self.owners[tokenId] = owner;
-        self.sellings[tokenId] = true;
-
-        emit SellingOrderCreated(tokenId: tokenId, price: price, owner: owner);
-    }
-
-    // purchase lets a user send tokens to purchase an NFT that is for sale
-    pub fun purchase(
+    pub resource interface AuctionPublic{
+        pub fun place(
             tokenId: UInt64,
-            buyer: Address,
-            affiliateAddress: Address,
-            affiliateTokens: @BNU.Vault,
-            storingTokens: @BNU.Vault,
-            insuranceTokens: @BNU.Vault,
-            contractorTokens: @BNU.Vault,
-            platformTokens: @BNU.Vault,
-            authorTokens: @BNU.Vault,
-            sellerTokens: @BNU.Vault
-       ) {
-        pre {
-            self.sellings[tokenId] == true && self.prices[tokenId] != nil:
-                "No token matching this ID for sale!"
-        }
+            price: UFix64,
+            affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
+            placeUserTokenReceiver: Capability<&{FungibleToken.Receiver}>,
+            placeUserNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
+            token: @FungibleToken.Vault);
 
-        let publicAccount = getAccount(0x01);
-
-        let transactionAddressReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>(
-            AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath).borrow()
-                ?? panic("Could not borrow a reference to the hello capability");
-
-        let feeInfoReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
-            .borrow() ?? panic("Could not borrow a reference to the hello capability");
-
-        let transactionAddress: AvatarArtTransactionInfo.TransactionAddressItem = 
-            transactionAddressReference.getAddress(tokenId: tokenId)!;
-        let feeInfo: AvatarArtTransactionInfo.FeeInfoItem = 
-            feeInfoReference.getFee(tokenId: tokenId)!;
-
-        // get the value out of the optional
-        let price = self.prices[tokenId]!;
-
-        if(affiliateAddress != nil){
-            if(feeInfo.affiliate != nil && feeInfo.affiliate > 0.0){
-                if(affiliateTokens.balance != price * feeInfo.affiliate / 100.0){
-                    destroy affiliateTokens;
-                    panic("affiliate fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: affiliateAddress, balanceVault: <- affiliateTokens);
-                }
-            }else{
-                destroy affiliateTokens;
-            }
-        }else{
-            destroy affiliateTokens;
-        }
-
-        if(transactionAddress.storing != nil){
-            if(feeInfo.storing != nil && feeInfo.storing > 0.0){
-                if(storingTokens.balance != price * feeInfo.storing / 100.0){
-                    destroy storingTokens;
-                    panic("storing fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: transactionAddress.storing, balanceVault: <- storingTokens);
-                }
-            }else{
-                destroy storingTokens;
-            }
-        }else{
-            destroy storingTokens;
-        }
-
-        if(transactionAddress.insurance != nil){
-            if(feeInfo.insurance != nil && feeInfo.insurance > 0.0){
-                if(insuranceTokens.balance != price * feeInfo.insurance / 100.0){
-                    destroy insuranceTokens;
-                    panic("insurance fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: transactionAddress.insurance, balanceVault: <- insuranceTokens);
-                }
-            }else{
-                destroy insuranceTokens;
-            }
-        }else{
-            destroy insuranceTokens;
-        }
-
-        if(transactionAddress.contractor != nil){
-            if(feeInfo.contractor != nil && feeInfo.contractor > 0.0){
-                if(contractorTokens.balance != price * feeInfo.contractor / 100.0){
-                    destroy contractorTokens;
-                    panic("contractor fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: transactionAddress.contractor, balanceVault: <- contractorTokens);
-                }
-            }else{
-                destroy contractorTokens;
-            }
-        }else{
-            destroy contractorTokens;
-        }
-
-        if(transactionAddress.platform != nil){
-            if(feeInfo.platform != nil && feeInfo.platform > 0.0){
-                if(platformTokens.balance != price * feeInfo.platform / 100.0){
-                    destroy platformTokens;
-                    panic("platform fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: transactionAddress.platform, balanceVault: <- platformTokens);
-                }
-            }else{
-                destroy platformTokens;
-            }
-        }else{
-            destroy platformTokens;
-        }
-
-        if(transactionAddress.author != nil){
-            if(feeInfo.author != nil && feeInfo.author > 0.0){
-                if(authorTokens.balance != price * feeInfo.author / 100.0){
-                    destroy authorTokens;
-                    panic("author fee parameter is invalid");
-                }else{
-                    self.transferToken(receipent: transactionAddress.author, balanceVault: <- authorTokens);
-                }
-            }else{
-                destroy authorTokens;
-            }
-        }else{
-            destroy authorTokens;
-        }
-
-        self.prices[tokenId] = nil;
-        let seller = self.owners[tokenId]!;
-        let sellerAccount = getAccount(seller);
-
-        let vaultRef = sellerAccount.getCapability<&BNU.Vault{FungibleToken.Receiver}>(BNU.ReceiverPath)
-                        .borrow() ?? panic("Could not borrow reference to owner token vault");
-        
-        // deposit the purchasing tokens into the owners vault
-        vaultRef.deposit(from: <-sellerTokens);
-
-        self.owners[tokenId] = buyer;
-
-        emit TokenPurchased(id: tokenId, price: price, time: getCurrentBlock().timestamp);
+        pub fun distribute(tokenId: UInt64, transactionInfoAccount: PublicAccount);
     }
 
-    // idPrice returns the price of a specific token in the sale
-    pub fun idPrice(tokenId: UInt64): UFix64? {
-        return self.prices[tokenId]
+    /**
+    * Resource to store all auction
+    **/
+    pub resource Auction : AuctionPublic{
+        pub var auctionInfos: {UInt64: AuctionItem};
+        pub var priceSteps: {UFix64: UFix64};
+        pub var paymentTypes: {UInt64: Type};
+        pub var keptVaults: @{UInt64: FungibleToken.Vault};
+        pub var nfts: @{UInt64: NonFungibleToken.NFT};
+
+        pub fun setPaymentType(tokenId: UInt64, paymentType: Type){
+            self.paymentTypes[tokenId] = paymentType;
+        }
+
+        pub fun setPriceStep(price: UFix64, priceStep: UFix64){
+            pre{
+                priceStep > 0.0: "priceStep should be greater than 0";
+            }
+            self.priceSteps[price] = priceStep;
+        }
+
+        pub fun createNewAuction(
+            startTime: UFix64,
+            endTime: UFix64,
+            price: UFix64,
+            ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
+            ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>,
+            nft: @NonFungibleToken.NFT){
+            pre{
+                self.auctionInfos[nft.id] == nil: "Auction has been created";
+            }
+            let tokenId = nft.id;
+
+            self.auctionInfos[tokenId] = AuctionItem(
+                startTime: startTime, 
+                endTime: endTime,
+                price: price,
+                ownerNftReceiver: ownerNftReceiver,
+                ownerVaultReceiver: ownerVaultReceiver);
+
+            let oldNft <- self.nfts.insert(key: tokenId, <- nft);
+            destroy oldNft;
+        }
+
+        pub fun updateAuctionTime(tokenId: UInt64, startTime: UFix64, endTime: UFix64){
+            pre{
+                self.auctionInfos[tokenId] != nil: "Auction has not been created";
+            }
+
+            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
+
+            auction.startTime = startTime;
+            auction.endTime = endTime;
+
+            self.auctionInfos[tokenId] = auction;
+        }
+
+        pub fun updateAuctionPrice(tokenId: UInt64, price: UFix64){
+            pre{
+                self.auctionInfos[tokenId] != nil: "Auction has not been created";
+            }
+            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
+            if(auction.startTime < getCurrentBlock().timestamp){
+                panic("Can not set price when auction starts");
+            }
+
+            auction.price = price;
+
+            self.auctionInfos[tokenId] = auction;
+        }
+
+        pub fun place(
+            tokenId: UInt64,
+            price: UFix64,
+            affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
+            placeUserTokenReceiver: Capability<&{FungibleToken.Receiver}>,
+            placeUserNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
+            token: @FungibleToken.Vault){
+            pre{
+                self.auctionInfos[tokenId] != nil: "Auction has not been created";
+                self.paymentTypes[tokenId] != nil: "Payment type has not been set";
+                token.isInstance(self.paymentTypes[tokenId]!) : "Payment token is not accepted";
+                token.balance == price: "Invalid balance to place";
+            }
+
+            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
+            let currentTime = getCurrentBlock().timestamp;
+            if(currentTime < auction.startTime || currentTime > auction.endTime){
+              panic("Invalid time to place");
+            }
+
+            if(auction.price + self.priceSteps[auction.price]! > price){
+              panic("Invalid price for price step");
+            }
+
+            //If has last winner, refund to him
+            let oldVault <- self.keptVaults.insert(key: tokenId, <- token);
+            if(oldVault != nil){
+                //Refund for last winner
+                auction.winnerVaultReceiver!.borrow()!.deposit(from: <- oldVault!);
+            }else{
+                destroy oldVault;
+            }
+
+            //Update winner and last bid price
+            auction.winnerVaultReceiver = placeUserTokenReceiver;
+            auction.ownerNftReceiver = placeUserNftReceiver;
+            auction.affiliateTokenReceiver = affiliateTokenReceiver;
+            auction.price = price;
+            self.auctionInfos[tokenId] = auction;
+        }
+
+        pub fun distribute(tokenId: UInt64, transactionInfoAccount: PublicAccount){
+            pre{
+                self.auctionInfos[tokenId] != nil: "Auction has not been created";
+            }
+
+            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
+            assert(getCurrentBlock().timestamp > auction.endTime, message: "Auction has not ended");
+
+            //Transfer NFT to winner, winner can be owner or new winner
+            let nft: @NonFungibleToken.NFT <- self.nfts.remove(key: tokenId)!;
+            auction.ownerNftReceiver.borrow()!.deposit(token: <- nft);
+
+            if(auction.winnerVaultReceiver != nil){
+                let feeReference = transactionInfoAccount
+                  .getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
+                  .borrow()??panic("Can not borrow AvatarArtTransactionInfo.PublicFeeInfo capability");
+                  
+                let fee = feeReference.getFee(tokenId: tokenId)!;
+
+                let feeRecepientReference = transactionInfoAccount
+                  .getCapability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>(AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath)
+                  .borrow()??panic("Can not borrow AvatarArtTransactionInfo.PublicTransactionAddress capability");
+                let feeRecepient = feeRecepientReference.getAddress(tokenId: tokenId)!;
+
+                //Distribute for users
+                let tokenVault <- self.keptVaults.remove(key: tokenId)!;
+                var tokenQuantity = tokenVault.balance;
+                if(fee.affiliate != nil && fee.affiliate > 0.0 && auction.affiliateTokenReceiver != nil){
+                    let fee = tokenQuantity * fee.affiliate / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    auction.affiliateTokenReceiver!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                if(fee.storing != nil && fee.storing > 0.0 && feeRecepient.storing != nil){
+                    let fee = tokenQuantity * fee.storing / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    feeRecepient.storing!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                if(fee.insurance != nil && fee.insurance > 0.0 && feeRecepient.insurance != nil){
+                    let fee = tokenQuantity * fee.insurance / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    feeRecepient.insurance!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                if(fee.contractor != nil && fee.contractor > 0.0 && feeRecepient.contractor != nil){
+                    let fee = tokenQuantity * fee.contractor / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    feeRecepient.contractor!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                if(fee.platform != nil && fee.platform > 0.0 && feeRecepient.platform != nil){
+                    let fee = tokenQuantity * fee.platform / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    feeRecepient.platform!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                if(fee.author != nil && fee.author > 0.0 && feeRecepient.author != nil){
+                    let fee = tokenQuantity * fee.author / 100.0;
+                    let feeVault <- tokenVault.withdraw(amount: fee);
+                    feeRecepient.author!.borrow()!.deposit(from: <- feeVault);
+                }
+
+                auction.ownerVaultReceiver.borrow()!.deposit(from: <-tokenVault);
+            }
+
+            //Remove resources
+            self.auctionInfos.remove(key: tokenId);
+
+            emit Distributed(tokenId: tokenId, user: auction.ownerNftReceiver.address);
+        }
+
+        init(){
+            self.auctionInfos = {};
+            self.priceSteps = {};
+            self.paymentTypes = {};
+            self.keptVaults <- {};
+            self.nfts <- {};
+        }
+
+        destroy() {
+            destroy self.keptVaults;
+            destroy self.nfts;
+        }
     }
 
-    // getIDs returns an array of token IDs that are for sale
-    pub fun getIDs(): [UInt64] {
-        return self.sellings.keys;
-    }
+    pub struct AuctionItem{
+        pub(set) var startTime: UFix64;
+        pub(set) var endTime: UFix64;
+        pub(set) var price: UFix64;
+        pub(set) var affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?;
+        pub(set) var winnerVaultReceiver: Capability<&{FungibleToken.Receiver}>?;
+        pub(set) var ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>;
+        pub let ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>;
 
-    pub fun getOwner(tokenId: UInt64): Address{
-        return self.owners[tokenId]!;
+        init(
+            startTime: UFix64,
+            endTime: UFix64, 
+            price: UFix64,
+            ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
+            ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>
+            ){
+            self.startTime = startTime;
+            self.endTime = endTime;
+            self.price = price;
+            
+            self.affiliateTokenReceiver = nil;
+            self.ownerVaultReceiver = ownerVaultReceiver;
+            self.ownerNftReceiver = ownerNftReceiver;
+            self.winnerVaultReceiver = nil;
+        }
     }
-
-    access(self) fun transferToken(receipent: Address, balanceVault: @BNU.Vault){
-        let publicAccount = getAccount(receipent);
-        let vaultRef =  publicAccount.getCapability<&{FungibleToken.Receiver}>(BNU.ReceiverPath)
-                        .borrow() ?? panic("Can not borrow vault capability");
-        vaultRef.deposit(from: <- balanceVault);
-    }
-
-    destroy() {
-        //Do nothing
-    }
-  }
-
+    
     init(){
-        self.CollectionStoragePath = /storage/avatarArtCollection;
-        self.CollectionCapabilityPath = /public/avatarArtCollectionCapability;
-        self.AdminSaleCollectionStoragePath = /storage/adminSaleCollection;
+        self.AuctionAdminStoragePath = /storage/avatarArtAdminAuction;
+        self.AuctionPublicPath = /public/avatarArtAdminAuction;
 
-        self.account.save(<- create SaleCollection(), to: self.AdminSaleCollectionStoragePath);
-        self.account.link<&{AvatarArtMarketplace.SalePublic}>(self.CollectionCapabilityPath, target: self.AdminSaleCollectionStoragePath);
+        self.account.save(<- create Auction(), to: self.AuctionAdminStoragePath);
+        self.account.link<&Auction{AuctionPublic}>(self.AuctionPublicPath, target: self.AuctionAdminStoragePath);
     }
 }

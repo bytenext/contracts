@@ -30,7 +30,8 @@ transaction (tokenId: UInt64, sellerAccountAddress: Address, affiliateAddress: A
         let price = self.publicSaleCollection.idPrice(tokenId: tokenId)!;
 
         let publicAccount = getAccount(0x01)
-        let feeInfoReference = publicAccount.getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
+        let feeInfoReference = publicAccount
+                .getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
                             .borrow()
                             ?? panic("Could not borrow a reference to the fee info capability");
         let feeInfo: AvatarArtTransactionInfo.FeeInfoItem = 
