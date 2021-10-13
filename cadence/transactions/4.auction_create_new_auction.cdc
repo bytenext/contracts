@@ -1,12 +1,9 @@
 import FungibleToken from 0x01
 import NonFungibleToken from 0x01
 import AvatarArtNFT from 0x01
-import AvatarArtTransactionInfo from 0x01
+import AvatarArtTransactionInfo from 0x02
 import BNU from 0x01
-import AvatarArtAuction from 0x02
-
-// This transaction allows the Minter account to mint an NFT
-// and deposit it into its collection.
+import AvatarArtAuction from 0x04
 
 transaction (tokenId: UInt64, startTime: UFix64, endTime: UFix64, price: UFix64, owner: Address){
     let nftCollectionRef: &AvatarArtNFT.Collection;
@@ -36,6 +33,7 @@ transaction (tokenId: UInt64, startTime: UFix64, endTime: UFix64, price: UFix64,
           startTime: startTime,
           endTime: endTime,
           price: price,
+          paymentType: BNU.Vault.getType(),
           ownerNftReceiver: ownerNftReceiver,
           ownerVaultReceiver: ownerVaultReceiver,
           nft: <- nft)

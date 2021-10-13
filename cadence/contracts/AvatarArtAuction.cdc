@@ -46,6 +46,7 @@ pub contract AvatarArtAuction {
             startTime: UFix64,
             endTime: UFix64,
             price: UFix64,
+            paymentType: Type,
             ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
             ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>,
             nft: @NonFungibleToken.NFT){
@@ -60,6 +61,8 @@ pub contract AvatarArtAuction {
                 price: price,
                 ownerNftReceiver: ownerNftReceiver,
                 ownerVaultReceiver: ownerVaultReceiver);
+
+            self.paymentTypes[tokenId] = paymentType;
 
             let oldNft <- self.nfts.insert(key: tokenId, <- nft);
             destroy oldNft;
