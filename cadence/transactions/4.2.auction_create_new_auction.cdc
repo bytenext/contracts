@@ -33,7 +33,7 @@ transaction (tokenId: UInt64, startTime: UFix64, endTime: UFix64, price: UFix64,
           startTime: startTime,
           endTime: endTime,
           price: price,
-          paymentType: BNU.Vault.getType(),
+          paymentType: Type<@BNU.Vault>(),
           ownerNftReceiver: ownerNftReceiver,
           ownerVaultReceiver: ownerVaultReceiver,
           nft: <- nft)
