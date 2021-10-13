@@ -169,14 +169,14 @@ pub contract AvatarArtTransactionInfo {
         let feeInfo <- create FeeInfo();
         self.account.save(<- feeInfo, to: self.FeeInfoStoragePath);
 
-        self.account.link<&{AvatarArtTransactionInfo.PublicFeeInfo}>(
+        self.account.link<&AvatarArtTransactionInfo.FeeInfo{AvatarArtTransactionInfo.PublicFeeInfo}>(
             AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath,
             target: AvatarArtTransactionInfo.FeeInfoStoragePath);
 
         let transactionAddress <- create TransactionAddress();
         self.account.save(<- transactionAddress, to: self.TransactionAddressStoragePath);
 
-        self.account.link<&{AvatarArtTransactionInfo.PublicTransactionAddress}>(
+        self.account.link<&AvatarArtTransactionInfo.TransactionAddress{AvatarArtTransactionInfo.PublicTransactionAddress}>(
             AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath,
             target: AvatarArtTransactionInfo.TransactionAddressStoragePath);
     }

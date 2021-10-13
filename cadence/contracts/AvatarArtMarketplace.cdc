@@ -8,8 +8,8 @@ import AvatarArtNFT from 0x01;
 import AvatarArtTransactionInfo from 0x02;
 
 pub contract AvatarArtMarketplace {
-    pub let CollectionStoragePath: StoragePath;
-    pub let CollectionCapabilityPath: PublicPath;
+    pub let SaleCollectionStoragePath: StoragePath;
+    pub let SaleCollectionPublicPath: PublicPath;
     pub let AdminSaleCollectionStoragePath: StoragePath;
 
   // Event that is emitted when a new NFT is put up for sale
@@ -187,14 +187,14 @@ pub contract AvatarArtMarketplace {
   }
 
   init(ownerTokenReceiver: Capability<&{FungibleToken.Receiver}>){
-        self.CollectionStoragePath = /storage/avatarArtCollection;
-        self.CollectionCapabilityPath = /public/avatarArtCollectionCapability;
-        self.AdminSaleCollectionStoragePath = /storage/adminSaleCollection;
+        self.SaleCollectionStoragePath = /storage/avatarArtCollection;
+        self.SaleCollectionPublicPath = /public/avatarArtCollection;
+        self.AdminSaleCollectionStoragePath = /storage/avatarArtAdminSaleCollection;
 
         self.nftPrices = {};
         self.paymentTypes = {};
 
-        self.account.save(<- create SaleCollection(ownerTokenReceiver: ownerTokenReceiver), to: self.AdminSaleCollectionStoragePath);
-        self.account.link<&SaleCollection{AvatarArtMarketplace.SalePublic}>(self.CollectionCapabilityPath, target: self.AdminSaleCollectionStoragePath);
+        self.account.save(<- create SaleCollection(ownerTokenReceiver: ownerTokenReceiver), to: self.AdminSaleSaleCollectionStoragePath);
+        self.account.link<&SaleCollection{AvatarArtMarketplace.SalePublic}>(self.SaleCollectionPublicPath, target: self.AdminSaleSaleCollectionStoragePath);
   }
 }
