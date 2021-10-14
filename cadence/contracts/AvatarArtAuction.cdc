@@ -64,7 +64,7 @@ pub contract AvatarArtAuction {
         pub var priceSteps: {UFix64: UFix64};
         pub var paymentTypes: {UInt64: Type};
         pub var keptVaults: @{UInt64: FungibleToken.Vault};
-        pub var nfts: @{UInt64: NonFungibleToken.NFT};
+        pub var nfts: @{UInt64: AvatarArtNFT.NFT};
 
         pub fun getAuctionInfo(tokenId:UInt64): AuctionItem?{
           return self.auctionInfos[tokenId];
@@ -107,7 +107,7 @@ pub contract AvatarArtAuction {
             paymentType: Type,
             ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
             ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>,
-            nft: @NonFungibleToken.NFT){
+            nft: @AvatarArtNFT.NFT){
             pre{
                 self.auctionInfos[nft.id] == nil: "Auction has been created";
             }
@@ -182,7 +182,7 @@ pub contract AvatarArtAuction {
               panic("Invalid price for price step");
             }
 
-            let userAddress = token.owner!.address;
+            let userAddress = placeUserTokenReceiver.address;
 
             //If has last winner, refund to him
             let oldVault <- self.keptVaults.insert(key: tokenId, <- token);
@@ -212,7 +212,7 @@ pub contract AvatarArtAuction {
             assert(getCurrentBlock().timestamp > auction.endTime, message: "Auction has not ended");
 
             //Transfer NFT to winner, winner can be owner or new winner
-            let nft: @NonFungibleToken.NFT <- self.nfts.remove(key: tokenId)!;
+            let nft: @NonFungibleToken.NFT <- self.nfts.remove(key: tokenId) as! @NonFungibleToken.NFT;
             auction.ownerNftReceiver.borrow()!.deposit(token: <- nft);
 
             if(auction.winnerVaultReceiver != nil){

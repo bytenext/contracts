@@ -19,6 +19,7 @@ pub contract AvatarArtMarketplace {
     pub var nftPrices: {UInt64: UFix64};
     pub var paymentTypes: {UInt64: Type};
     pub var withdrawables: {UInt64: Bool};
+    pub var firstSolds: {UInt64: Bool};
 
     pub resource interface SaleCollectionNftReceiver{
         pub fun deposit(nft: @AvatarArtNFT.NFT);
@@ -75,12 +76,18 @@ pub contract AvatarArtMarketplace {
                     "User does not own this NFT";
             }
 
-            AvatarArtMarketplace.nftPrices[tokenId] = price;
+            var sellingPrice = price;
+
+            if(AvatarArtMarketplace.firstSolds[tokenId] == false){
+                sellingPrice = AvatarArtMarketplace.nftPrices[tokenId]!;
+            }
+
+            AvatarArtMarketplace.nftPrices[tokenId] = sellingPrice;
             AvatarArtMarketplace.paymentTypes[tokenId] = paymentType;
             //Set NFT as selling
             self.sellings[tokenId] = true;
 
-            emit SellingOrderCreated(tokenId: tokenId, price: price);
+            emit SellingOrderCreated(tokenId: tokenId, price: sellingPrice);
         }
 
         // Seller cancels selling order by removing tokenId from collection
@@ -177,6 +184,9 @@ pub contract AvatarArtMarketplace {
 
             //Update contract price
             AvatarArtMarketplace.nftPrices[tokenId] = 0.0;
+            if(AvatarArtMarketplace.firstSolds[tokenId] != true){
+                AvatarArtMarketplace.firstSolds[tokenId] = true;
+            }
             self.sellings.remove(key: tokenId);
 
             let nft <- self.nfts.remove(key: tokenId)!;
@@ -185,9 +195,7 @@ pub contract AvatarArtMarketplace {
             emit TokenPurchased(id: tokenId, price: price, time: getCurrentBlock().timestamp);
         }
 
-        /**User withdraws nft from contract
-            This NFT will be sent to admin so that
-        **/
+        //User can withdraw NFT when admin approves
         pub fun withdrawNft(tokenId: UInt64): @AvatarArtNFT.NFT{
             pre{
                 AvatarArtMarketplace.withdrawables[tokenId] == true:
@@ -197,6 +205,7 @@ pub contract AvatarArtMarketplace {
 
             AvatarArtMarketplace.nftPrices.remove(key: tokenId);
             AvatarArtMarketplace.withdrawables.remove(key: tokenId);
+            AvatarArtMarketplace.firstSolds.remove(key: tokenId);
             self.sellings.remove(key: tokenId);
             return <- self.nfts.remove(key: tokenId)!;
         }
@@ -233,6 +242,7 @@ pub contract AvatarArtMarketplace {
             self.nftPrices = {};
             self.paymentTypes = {};
             self.withdrawables = {};
+            self.firstSolds = {};
 
             self.account.save(<- create Administrator(), to: self.AdministratorStoragePath);
     }
