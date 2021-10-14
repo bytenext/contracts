@@ -189,7 +189,6 @@ pub contract AvatarArtMarketplace {
   init(ownerTokenReceiver: Capability<&{FungibleToken.Receiver}>){
         self.SaleCollectionStoragePath = /storage/avatarArtCollection;
         self.SaleCollectionPublicPath = /public/avatarArtCollection;
-        self.AdminSaleCollectionStoragePath = /storage/avatarArtAdminSaleCollection;
 
         self.nftPrices = {};
         self.paymentTypes = {};

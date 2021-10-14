@@ -1,15 +1,50 @@
 import FungibleToken from 0x01;
 import NonFungibleToken from 0x01;
 import AvatarArtNFT from 0x01;
-import AvatarArtTransactionInfo from 0x01;
+import AvatarArtTransactionInfo from 0x02;
 
 pub contract AvatarArtAuction {
+    pub event NewAuctionCreated(tokenId: UInt64, startTime: UFix64, endTime: UFix64, startPrice: UFix64);
+    pub event AuctionPriceUpdated(tokenId: UInt64, price: UFix64);
+    pub event AuctionTimeUpdated(tokenId: UInt64, startTime: UFix64, endTime: UFix64);
     pub event Distributed(tokenId: UInt64, user: Address);
+    pub event NewPlace(tokenId: UInt64, price: UFix64, user: Address, time: UFix64);
 
     pub let AuctionAdminStoragePath: StoragePath;
     pub let AuctionPublicPath: PublicPath;
 
+        pub struct AuctionItem{
+        pub(set) var startTime: UFix64;
+        pub(set) var endTime: UFix64;
+        pub var startPrice: UFix64;
+        pub(set) var lastPrice: UFix64;
+        pub(set) var affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?;
+        pub(set) var winnerVaultReceiver: Capability<&{FungibleToken.Receiver}>?;
+        pub(set) var ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>;
+        pub let ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>;
+
+        init(
+            startTime: UFix64,
+            endTime: UFix64, 
+            startPrice: UFix64,
+            ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
+            ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>
+            ){
+            self.startTime = startTime;
+            self.endTime = endTime;
+            self.startPrice = startPrice;
+            self.lastPrice = 0.0;
+            self.affiliateTokenReceiver = nil;
+            self.ownerVaultReceiver = ownerVaultReceiver;
+            self.ownerNftReceiver = ownerNftReceiver;
+            self.winnerVaultReceiver = nil;
+        }
+    }
+
     pub resource interface AuctionPublic{
+        pub fun getAuctionInfo(tokenId:UInt64): AuctionItem?;
+        pub fun getPriceStep(price: UFix64): UFix64?;
+        pub fun getPaymentType(tokenId: UInt64): Type?;
         pub fun place(
             tokenId: UInt64,
             price: UFix64,
@@ -30,6 +65,29 @@ pub contract AvatarArtAuction {
         pub var paymentTypes: {UInt64: Type};
         pub var keptVaults: @{UInt64: FungibleToken.Vault};
         pub var nfts: @{UInt64: NonFungibleToken.NFT};
+
+        pub fun getAuctionInfo(tokenId:UInt64): AuctionItem?{
+          return self.auctionInfos[tokenId];
+        }
+
+        pub fun getPaymentType(tokenId: UInt64): Type?{
+            return self.paymentTypes[tokenId];
+        }
+
+        pub fun getPriceStep(price: UFix64): UFix64?{
+          var priceStep: UFix64 = 0.0;
+          var prevPrice: UFix64 = 0.0;
+          for key in self.priceSteps.keys{
+              if(key == price){
+                  return self.priceSteps[key];
+              }else if(key < price && prevPrice < key){
+                  priceStep = self.priceSteps[key]!;
+                  prevPrice = key;
+              }
+          }
+
+          return priceStep;
+        }
 
         pub fun setPaymentType(tokenId: UInt64, paymentType: Type){
             self.paymentTypes[tokenId] = paymentType;
@@ -58,7 +116,7 @@ pub contract AvatarArtAuction {
             self.auctionInfos[tokenId] = AuctionItem(
                 startTime: startTime, 
                 endTime: endTime,
-                price: price,
+                startPrice: price,
                 ownerNftReceiver: ownerNftReceiver,
                 ownerVaultReceiver: ownerVaultReceiver);
 
@@ -66,6 +124,8 @@ pub contract AvatarArtAuction {
 
             let oldNft <- self.nfts.insert(key: tokenId, <- nft);
             destroy oldNft;
+
+            emit NewAuctionCreated(tokenId: tokenId, startTime: startTime, endTime: endTime, startPrice: price);
         }
 
         pub fun updateAuctionTime(tokenId: UInt64, startTime: UFix64, endTime: UFix64){
@@ -79,6 +139,8 @@ pub contract AvatarArtAuction {
             auction.endTime = endTime;
 
             self.auctionInfos[tokenId] = auction;
+
+            emit AuctionTimeUpdated(tokenId: tokenId, startTime: startTime, endTime: endTime);
         }
 
         pub fun updateAuctionPrice(tokenId: UInt64, price: UFix64){
@@ -90,9 +152,10 @@ pub contract AvatarArtAuction {
                 panic("Can not set price when auction starts");
             }
 
-            auction.price = price;
+            auction.lastPrice = price;
 
             self.auctionInfos[tokenId] = auction;
+            emit AuctionPriceUpdated(tokenId: tokenId, price: price);
         }
 
         pub fun place(
@@ -115,9 +178,11 @@ pub contract AvatarArtAuction {
               panic("Invalid time to place");
             }
 
-            if(auction.price + self.priceSteps[auction.price]! > price){
+            if(auction.lastPrice + self.getPriceStep(price: auction.startPrice)! > price){
               panic("Invalid price for price step");
             }
+
+            let userAddress = token.owner!.address;
 
             //If has last winner, refund to him
             let oldVault <- self.keptVaults.insert(key: tokenId, <- token);
@@ -132,8 +197,10 @@ pub contract AvatarArtAuction {
             auction.winnerVaultReceiver = placeUserTokenReceiver;
             auction.ownerNftReceiver = placeUserNftReceiver;
             auction.affiliateTokenReceiver = affiliateTokenReceiver;
-            auction.price = price;
+            auction.lastPrice = price;
             self.auctionInfos[tokenId] = auction;
+
+            emit NewPlace(tokenId: tokenId, price: price, user: userAddress, time: getCurrentBlock().timestamp);
         }
 
         pub fun distribute(tokenId: UInt64, transactionInfoAccount: PublicAccount){
@@ -219,33 +286,6 @@ pub contract AvatarArtAuction {
         destroy() {
             destroy self.keptVaults;
             destroy self.nfts;
-        }
-    }
-
-    pub struct AuctionItem{
-        pub(set) var startTime: UFix64;
-        pub(set) var endTime: UFix64;
-        pub(set) var price: UFix64;
-        pub(set) var affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?;
-        pub(set) var winnerVaultReceiver: Capability<&{FungibleToken.Receiver}>?;
-        pub(set) var ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>;
-        pub let ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>;
-
-        init(
-            startTime: UFix64,
-            endTime: UFix64, 
-            price: UFix64,
-            ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>,
-            ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>
-            ){
-            self.startTime = startTime;
-            self.endTime = endTime;
-            self.price = price;
-            
-            self.affiliateTokenReceiver = nil;
-            self.ownerVaultReceiver = ownerVaultReceiver;
-            self.ownerNftReceiver = ownerNftReceiver;
-            self.winnerVaultReceiver = nil;
         }
     }
     
