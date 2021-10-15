@@ -1,11 +1,11 @@
+import FungibleToken from 0x01;
+
 pub contract AvatarArtTransactionInfo {
     pub let FeeInfoStoragePath: StoragePath;
     pub let FeeInfoPublicPath: PublicPath;
-    pub let FeeInfoCapabilityPublicPath: PublicPath;
 
     pub let TransactionAddressStoragePath: StoragePath;
     pub let TransactionAddressPublicPath: PublicPath;
-    pub let TransactionAddressCapabilityPublicPath: PublicPath;
 
     pub event FeeUpdated(tokenId: UInt64, affiliate: UFix64, storing: UFix64, insurance: UFix64, contractor: UFix64, platform: UFix64, author: UFix64);
     pub event TransactionAddressUpdated(tokenId: UInt64, storing: Address?, insurance: Address?, contractor: Address?, platform: Address?, author: Address?);
@@ -158,26 +158,24 @@ pub contract AvatarArtTransactionInfo {
     }
 
     init(){
-        self.FeeInfoStoragePath = /storage/feeInfo;
-        self.FeeInfoPublicPath = /public/feeInfo;
-        self.FeeInfoCapabilityPublicPath = /public/feeInfoCapability;
+        self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo;
+        self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo;
 
-        self.TransactionAddressStoragePath = /storage/transactionAddress;
-        self.TransactionAddressPublicPath = /public/transactionAddress;
-        self.TransactionAddressCapabilityPublicPath = /public/transactionAddress;
+        self.TransactionAddressStoragePath = /storage/avatarArtTransactionInfoRecepientAddress;
+        self.TransactionAddressPublicPath = /public/avatarArtTransactionInfoRecepientAddress;
 
         let feeInfo <- create FeeInfo();
         self.account.save(<- feeInfo, to: self.FeeInfoStoragePath);
 
         self.account.link<&AvatarArtTransactionInfo.FeeInfo{AvatarArtTransactionInfo.PublicFeeInfo}>(
-            AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath,
+            AvatarArtTransactionInfo.FeeInfoPublicPath,
             target: AvatarArtTransactionInfo.FeeInfoStoragePath);
 
         let transactionAddress <- create TransactionAddress();
         self.account.save(<- transactionAddress, to: self.TransactionAddressStoragePath);
 
         self.account.link<&AvatarArtTransactionInfo.TransactionAddress{AvatarArtTransactionInfo.PublicTransactionAddress}>(
-            AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath,
+            AvatarArtTransactionInfo.TransactionAddressPublicPath,
             target: AvatarArtTransactionInfo.TransactionAddressStoragePath);
     }
 }

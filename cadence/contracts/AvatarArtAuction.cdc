@@ -320,6 +320,9 @@ pub contract AvatarArtAuction {
 
     pub resource Administrator{
         pub fun setNftPrice(tokenId: UInt64, startPrice: UFix64){
+            pre{
+                AvatarArtAuction.nftStartPrices[tokenId] == nil: "Can not set price";
+            }
             AvatarArtAuction.nftStartPrices[tokenId] = startPrice;
         }
 
