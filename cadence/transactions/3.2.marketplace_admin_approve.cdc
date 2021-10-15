@@ -1,21 +1,18 @@
-
+import BNU from 0x01
 import AvatarArtMarketplace from 0x03
 
-transaction(tokenId: UInt64, price: UFix64) {
-    let adminReference: &AvatarArtMarketplace.Administrator
+transaction (tokenId: UInt64, price: UFix64){
     prepare(adminAccount: AuthAccount) {
-        assert(tokenId > 0,message: "tokenId parameter is invalid");
+        let auctionAdmin = adminAccount
+                    .borrow<&AvatarArtMarketplace.Administrator>(from: AvatarArtMarketplace.AdministratorStoragePath)
+                    ?? panic("Can not borrow Auction capability");
 
-        self.adminReference = adminAccount.borrow<&AvatarArtMarketplace.Administrator>(from: AvatarArtMarketplace.AdminStoragePath)
-            ?? panic("Can not borrow AvatarArtMarketplace.Administrator");
-    }
-
-    execute{
-        self.adminReference.setNftPrice(tokenId: tokenId, price: price);
+          auctionAdmin.setNftPrice(tokenId: tokenId, price: price);
+          auctionAdmin.setPaymentType(tokenId: tokenId, paymentType: Type<@BNU.Vault>());
     }
 
     post{
-        AvatarArtMarketplace.getNftPrice(tokenId: tokenId) == price:
-            "NFT price is not set";
+      AvatarArtMarketplace.nftPrices[tokenId] == price:
+        "Set start price fail";
     }
 }

@@ -31,7 +31,8 @@ pub contract AvatarArtMarketplace {
             buyerSaleCollectionNftReceiver: Capability<&{AvatarArtMarketplace.SaleCollectionNftReceiver}>,
             affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
             tokens: @FungibleToken.Vault,
-            transactionInfoAccount: PublicAccount);
+            feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
+            feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>);
         pub fun getSellingNFTs(): [UInt64];
     }
 
@@ -117,7 +118,8 @@ pub contract AvatarArtMarketplace {
             buyerSaleCollectionNftReceiver: Capability<&{AvatarArtMarketplace.SaleCollectionNftReceiver}>,
             affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
             tokens: @FungibleToken.Vault,
-            transactionInfoAccount: PublicAccount) {
+            feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
+            feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>) {
             pre {
                 AvatarArtMarketplace.nftPrices[tokenId] != nil && AvatarArtMarketplace.nftPrices[tokenId]! > 0.0:
                     "Can not purchase NFT";
@@ -129,16 +131,8 @@ pub contract AvatarArtMarketplace {
                     "Token balance is invalid";
             }
 
-            let feeReference = transactionInfoAccount
-                    .getCapability<&{AvatarArtTransactionInfo.PublicFeeInfo}>(AvatarArtTransactionInfo.FeeInfoCapabilityPublicPath)
-                    .borrow()??panic("Can not borrow AvatarArtTransactionInfo.PublicFeeInfo capability");
-                    
-            let fee = feeReference.getFee(tokenId: tokenId)!;
-
-            let feeRecepientReference = transactionInfoAccount
-                .getCapability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>(AvatarArtTransactionInfo.TransactionAddressCapabilityPublicPath)
-                .borrow()??panic("Can not borrow AvatarArtTransactionInfo.PublicTransactionAddress capability");
-            let feeRecepient = feeRecepientReference.getAddress(tokenId: tokenId)!;
+            let fee = feeReference.borrow()!.getFee(tokenId: tokenId)!;
+            let feeRecepient = feeRecepientReference.borrow()!.getAddress(tokenId: tokenId)!;
 
             let price = AvatarArtMarketplace.nftPrices[tokenId]!;
 
