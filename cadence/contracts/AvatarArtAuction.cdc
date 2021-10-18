@@ -126,7 +126,7 @@ pub contract AvatarArtAuction {
             pre{
                 self.auctionInfos[tokenId] == nil: "Auction has been created";
                 AvatarArtAuction.nftStartPrices[tokenId] != nil && 
-                AvatarArtAuction.nftStartPrices[tokenId]! > 0.0:
+                AvatarArtAuction.nftStartPrices[tokenId]! == 0.0:
                     "Can not create new auction";
             }
             var startPrice = price;
@@ -216,6 +216,8 @@ pub contract AvatarArtAuction {
             var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
             assert(getCurrentBlock().timestamp > auction.endTime, message: "Auction has not ended");
 
+            AvatarArtAuction.nftStartPrices[tokenId] = 0.0;
+
             var winnerAddress: Address? = nil;
             if(auction.winnerVaultReceiver != nil){
                 winnerAddress = auction.winnerVaultReceiver!.address;
@@ -272,7 +274,6 @@ pub contract AvatarArtAuction {
 
             //Remove resources
             self.auctionInfos.remove(key: tokenId);
-            AvatarArtAuction.nftStartPrices[tokenId] = 0.0;
             AvatarArtAuction.firstSolds[tokenId] = true;
             self.auctionings[tokenId] = false;
 
