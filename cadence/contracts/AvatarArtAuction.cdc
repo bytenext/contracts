@@ -128,6 +128,7 @@ pub contract AvatarArtAuction {
                 AvatarArtAuction.nftStartPrices[tokenId] != nil && 
                 AvatarArtAuction.nftStartPrices[tokenId]! == 0.0:
                     "Can not create new auction";
+                self.nfts[tokenId] != nil: "User does not own NFT";
             }
             var startPrice = price;
             if(AvatarArtAuction.firstSolds[tokenId] == false){
