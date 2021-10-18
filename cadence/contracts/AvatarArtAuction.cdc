@@ -61,6 +61,8 @@ pub contract AvatarArtAuction {
             tokenId: UInt64,
             feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
             feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>);
+
+        pub fun isExisted(tokenId: UInt64): Bool;
     }
 
     pub resource Auction : AuctionPublic, AuctionNFTReceiver{
@@ -301,6 +303,10 @@ pub contract AvatarArtAuction {
             AvatarArtAuction.firstSolds.remove(key: tokenId);
             self.auctionings.remove(key: tokenId);
             return <- self.nfts.remove(key: tokenId)!;
+        }
+
+        pub fun isExisted(tokenId: UInt64): Bool{
+            return self.nfts[tokenId] != nil;
         }
 
         init(
