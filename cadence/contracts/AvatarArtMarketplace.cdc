@@ -228,7 +228,7 @@ pub contract AvatarArtMarketplace {
         return <- create SaleCollection(ownerTokenReceiver: ownerTokenReceiver);
     }
 
-    init(ownerTokenReceiver: Capability<&{FungibleToken.Receiver}>){
+    init(){
             self.SaleCollectionStoragePath = /storage/avatarArtMarketplaceCollection;
             self.SaleCollectionPublicPath = /public/avatarArtMarketplaceCollection;
             self.AdministratorStoragePath = /storage/avatarArtMarketplaceAdmin;
