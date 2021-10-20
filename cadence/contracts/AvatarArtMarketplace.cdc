@@ -34,6 +34,7 @@ pub contract AvatarArtMarketplace {
             feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
             feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>);
         pub fun getSellingNFTs(): [UInt64];
+        pub fun isNFTExisted(tokenId: UInt64): Bool;
     }
 
     pub resource SaleCollection: SalePublic, SaleCollectionNftReceiver {
@@ -207,6 +208,10 @@ pub contract AvatarArtMarketplace {
         // getIDs returns an array of token IDs that are for sale
         pub fun getSellingNFTs(): [UInt64] {
             return self.sellings.keys;
+        }
+
+        pub fun isNFTExisted(tokenId: UInt64): Bool{
+            return self.nfts[tokenId] != nil;
         }
     }
 
