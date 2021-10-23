@@ -13,7 +13,7 @@ pub contract AvatarArtMarketplace {
     pub let AdministratorStoragePath: StoragePath;
 
     pub event SellingOrderCreated(tokenId: UInt64, price: UFix64);
-    pub event TokenPurchased(id: UInt64, price: UFix64, time: UFix64);
+    pub event TokenPurchased(id: UInt64, price: UFix64, buyer: Address, time: UFix64);
     pub event SaleWithdrawn(id: UInt64);
 
     pub var nftPrices: {UInt64: UFix64};
@@ -187,7 +187,9 @@ pub contract AvatarArtMarketplace {
             let nft <- self.nfts.remove(key: tokenId)!;
             buyerSaleCollectionNftReceiver.borrow()!.deposit(nft: <- nft);
 
-            emit TokenPurchased(id: tokenId, price: price, time: getCurrentBlock().timestamp);
+            let buyerAddress: Address = buyerSaleCollectionNftReceiver.address;
+
+            emit TokenPurchased(id: tokenId, price: price, buyer: buyerAddress, time: getCurrentBlock().timestamp);
         }
 
         //User can withdraw NFT when admin approves
