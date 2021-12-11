@@ -1,11 +1,15 @@
-import FungibleToken from 0x01;
+import FungibleToken from "./FungibleToken.cdc";
 
 pub contract AvatarArtTransactionInfo {
+    access(self) var acceptCurrencies: [Type];
+
     pub let FeeInfoStoragePath: StoragePath;
     pub let FeeInfoPublicPath: PublicPath;
 
     pub let TransactionAddressStoragePath: StoragePath;
     pub let TransactionAddressPublicPath: PublicPath;
+
+    pub let AdminStoragePath: StoragePath;
 
     pub event FeeUpdated(tokenId: UInt64, affiliate: UFix64, storing: UFix64, insurance: UFix64, contractor: UFix64, platform: UFix64, author: UFix64);
     pub event TransactionAddressUpdated(tokenId: UInt64, storing: Address?, insurance: Address?, contractor: Address?, platform: Address?, author: Address?);
@@ -95,55 +99,57 @@ pub contract AvatarArtTransactionInfo {
     }
 
     pub resource interface PublicTransactionAddress{
-        pub fun getAddress(tokenId: UInt64): TransactionRecipientItem?;
+        pub fun getAddress(tokenId: UInt64, payType: Type): TransactionRecipientItem?;
     }
 
     pub resource TransactionAddress : PublicTransactionAddress{
         //Store fee for each NFT
-        pub var addresses: {UInt64: TransactionRecipientItem};
+        // map tokenID => { payTypeIdentifier => TransactionRecipientItem }
+        pub var addresses: {UInt64: {String: TransactionRecipientItem}};
 
-        pub fun setAddress(tokenId: UInt64,
+        pub fun setAddress(tokenId: UInt64, payType: Type,
             storing: Capability<&{FungibleToken.Receiver}>?, 
             insurance: Capability<&{FungibleToken.Receiver}>?, 
             contractor: Capability<&{FungibleToken.Receiver}>?, 
             platform: Capability<&{FungibleToken.Receiver}>?, 
             author: Capability<&{FungibleToken.Receiver}>?){
-            pre{
+            pre {
                 tokenId > 0: "tokenId parameter is zero";
             }
 
-            self.addresses[tokenId] = TransactionRecipientItem(
-                _storing: storing,
-                _insurance: insurance,
-                _contractor: contractor,
-                _platform: platform,
-                _author: author);
+            let address = self.addresses[tokenId] ?? {};
 
-            var storingAddress: Address? = nil;
-            if(storing != nil){storingAddress = storing!.address};
+            address.insert(
+                key: payType.identifier,
+                TransactionRecipientItem(
+                    _storing: storing,
+                    _insurance: insurance,
+                    _contractor: contractor,
+                    _platform: platform,
+                    _author: author)
+            )
 
-            var insuranceAddress: Address? = nil;
-            if(insurance != nil){insuranceAddress = insurance!.address};
+            self.addresses[tokenId] = address;
 
-            var contractorAddress: Address? = nil;
-            if(contractor != nil){contractorAddress = contractor!.address};
-
-            var platformAddress: Address? = nil;
-            if(platform != nil){platformAddress = platform!.address};
-
-            var authorAddress: Address? = nil;
-            if(author != nil){authorAddress = author!.address};
-
-            emit TransactionAddressUpdated(tokenId: tokenId, storing: storingAddress,
-                   insurance: insuranceAddress, contractor: contractorAddress, platform: platformAddress, author: authorAddress);
+            emit TransactionAddressUpdated(
+                tokenId: tokenId,
+                storing: storing?.address,
+                insurance: insurance?.address,
+                contractor: contractor?.address,
+                platform: platform?.address,
+                author: author?.address
+            );
         }
 
-        pub fun getAddress(tokenId: UInt64): TransactionRecipientItem?{
-            pre{
+        pub fun getAddress(tokenId: UInt64, payType: Type): TransactionRecipientItem?{
+            pre {
                 tokenId > 0: "tokenId parameter is zero";
             }
 
-            return self.addresses[tokenId];
+            if let addr = self.addresses[tokenId] {
+                return addr[payType.identifier]
+            }
+            return nil
         }
 
         // initializer
@@ -157,7 +163,29 @@ pub contract AvatarArtTransactionInfo {
         }
     }
 
+    pub resource Administrator {
+        pub fun setAcceptCurrencies(types: [Type]) {
+            for type in types {
+                assert(
+                type.isSubtype(of: Type<@FungibleToken.Vault>()),
+                message: "Should be a sub type of FungibleToken.Vault"
+                )
+            }
+
+            AvatarArtTransactionInfo.acceptCurrencies = types;
+        }
+    }
+
+    pub fun getAcceptCurrentcies(): [Type] {
+        return  self.acceptCurrencies;
+    }
+
+    pub fun isCurrencyAccepted(type: Type): Bool {
+        return  self.acceptCurrencies.contains(type);
+    }
+
     init(){
+        self.acceptCurrencies = [];
         self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo;
         self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo;
 
@@ -177,5 +205,8 @@ pub contract AvatarArtTransactionInfo {
         self.account.link<&AvatarArtTransactionInfo.TransactionAddress{AvatarArtTransactionInfo.PublicTransactionAddress}>(
             AvatarArtTransactionInfo.TransactionAddressPublicPath,
             target: AvatarArtTransactionInfo.TransactionAddressStoragePath);
+
+        self.AdminStoragePath = /storage/avatarArtTransactionInfoAdmin
+        self.account.save(<- create Administrator(), to: self.AdminStoragePath);
     }
 }

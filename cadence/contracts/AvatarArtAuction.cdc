@@ -1,371 +1,656 @@
-import FungibleToken from 0x01;
-import NonFungibleToken from 0x01;
-import AvatarArtNFT from 0x01;
-import AvatarArtTransactionInfo from 0x02;
+import FungibleToken from "./FungibleToken.cdc";
+import NonFungibleToken from "./NonFungibleToken.cdc";
+import AvatarArtNFT from "./AvatarArtNFT.cdc";
+import AvatarArtTransactionInfo from "./AvatarArtTransactionInfo.cdc";
 
 pub contract AvatarArtAuction {
-    pub event NewAuctionCreated(tokenId: UInt64, startTime: UFix64, endTime: UFix64, startPrice: UFix64);
-    pub event AuctionPriceUpdated(tokenId: UInt64, price: UFix64);
-    pub event AuctionTimeUpdated(tokenId: UInt64, startTime: UFix64, endTime: UFix64);
-    pub event Distributed(tokenId: UInt64, user: Address);
-    pub event NewPlace(tokenId: UInt64, price: UFix64, user: Address, time: UFix64);
+  pub var totalAuctions: UInt64;
 
-    pub let AuctionStoragePath: StoragePath;
-    pub let AuctionPublicPath: PublicPath;
-    pub let AdminStoragePath: StoragePath;
+  pub let AuctionStoreStoragePath: StoragePath;
+  pub let AdminStoragePath: StoragePath;
+  pub let AuctionStorePublicPath: PublicPath;
 
-    pub var nftStartPrices: {UInt64: UFix64};
-    pub var paymentTypes: {UInt64: Type};
-    pub var priceSteps: {UFix64: UFix64};
-    pub var withdrawables: {UInt64: Bool};
-    pub var firstSolds: {UInt64: Bool};
+  access(self) var priceSteps: {UFix64: UFix64};
+  access(self) var feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>?;
+  access(self) var feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>?;
 
-    pub struct AuctionItem{
-        pub(set) var startTime: UFix64;
-        pub(set) var endTime: UFix64;
-        pub var startPrice: UFix64;
-        pub(set) var lastPrice: UFix64;
-        pub(set) var affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?;
-        pub(set) var winnerVaultReceiver: Capability<&{FungibleToken.Receiver}>?;
-        pub(set) var winnerAuctionNftReceiver: Capability<&{AuctionNFTReceiver}>?;
+  pub event Bid(storeID: UInt64, tokenID: UInt64, auctionID: UInt64, bidderAddress: Address, bidPrice: UFix64, time: UFix64);
+  pub event CuttedFee(storeID: UInt64, auctionID: UInt64, fee: CutFee);
+  pub event TokenPurchased(storeID: UInt64, auctionID: UInt64, tokenID: UInt64, price: UFix64, from: Address, to:Address?);
+  pub event AuctionCompleted(storeID: UInt64, auctionID: UInt64, tokenPurchased: Bool);
+  pub event AuctionAvailable(
+    storeAddress: Address,
+    auctionID: UInt64,
+    nftType: Type,
+    nftID: UInt64,
+    ftVaultType: Type,
+    startPrice: UFix64,
+    startTime: UFix64,
+    endTime: UFix64,
+    );
+  pub event StoreInitialized(storeID: UInt64);
+  pub event StoreDestroyed(storeID: UInt64);
 
-        init(
-            startTime: UFix64,
-            endTime: UFix64, 
-            startPrice: UFix64){
-            self.startTime = startTime;
-            self.endTime = endTime;
-            self.startPrice = startPrice;
-            self.lastPrice = 0.0;
-            self.affiliateTokenReceiver = nil;
-            self.winnerVaultReceiver = nil;
-            self.winnerAuctionNftReceiver = nil;
+  pub struct AuctionDetail{
+      pub let id: UInt64;
+      pub let lastPrice : UFix64;
+      pub let mimimumBidIncrement : UFix64;
+      pub let bids : UInt64;
+      pub let timeRemaining : Fix64;
+      pub let endTime : UFix64;
+      pub let startTime : UFix64;
+      pub let artId: UInt64?;
+      pub let owner: Address;
+      pub let minNextBid: UFix64;
+      pub let completed: Bool;
+      pub let expired: Bool;
+      pub let leader: Address?;
+  
+      init(id:UInt64, 
+          currentPrice: UFix64, 
+          bids:UInt64, 
+          active: Bool, 
+          timeRemaining:Fix64, 
+          artId: UInt64?,
+          minimumBidIncrement: UFix64,
+          owner: Address, 
+          startTime: UFix64,
+          endTime: UFix64,
+          minNextBid:UFix64,
+          completed: Bool,
+          expired:Bool,
+          leader: Address?
+      ) {
+          self.id = id;
+          self.lastPrice = currentPrice;
+          self.bids = bids;
+          self.timeRemaining = timeRemaining;
+          self.artId = artId;
+          self.mimimumBidIncrement = minimumBidIncrement;
+          self.owner = owner;
+          self.startTime = startTime;
+          self.endTime = endTime;
+          self.minNextBid = minNextBid;
+          self.completed = completed;
+          self.expired = expired;
+          self.leader = leader;
+      }
+  }
+
+  pub struct CutFee {
+      pub(set) var affiliate: UFix64;
+      pub(set) var storing: UFix64;
+      pub(set) var insurance: UFix64;
+      pub(set) var contractor: UFix64;
+      pub(set) var platform: UFix64;
+      pub(set) var author: UFix64;
+
+      init() {
+        self.affiliate = 0.0;
+        self.storing = 0.0;
+        self.insurance = 0.0;
+        self.contractor = 0.0;
+        self.platform = 0.0;
+        self.author = 0.0;
+      }
+  }
+
+
+  pub resource interface AuctionPublic {
+    pub fun timeRemaining() : Fix64;
+    pub fun isAuctionExpired(): Bool;
+    pub fun getDetails(): AuctionDetail;
+    pub fun bidder() : Address?;
+    pub fun currentBidForUser(address: Address): UFix64;
+    pub fun placeBid(price: UFix64,
+            affiliateVaultCap: Capability<&{FungibleToken.Receiver}>?,
+            vaultCap: Capability<&{FungibleToken.Receiver}>,
+            collectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>,
+            bidTokens: @FungibleToken.Vault);
+  }
+
+  pub resource AuctionItem: AuctionPublic {
+    //Number of bids made, that is aggregated to the status struct
+    access(self) var numberOfBids: UInt64;
+
+    //The Item that is sold at this auction
+    //It would be really easy to extend this auction with using a NFTCollection here to be able to auction of several NFTs as a single
+    access(self) var nft: @AvatarArtNFT.NFT?;
+
+    //This is the escrow vault that holds the tokens for the current largest bid
+    access(self) let bidVault: @FungibleToken.Vault;
+
+    //The start time of auction
+    access(self) var startTime: UFix64;
+
+    //The end time of auction
+    access(self) var endTime: UFix64;
+
+    access(contract) var auctionCompleted: Bool;
+
+    // The start price to bid
+    access(self) var startPrice: UFix64;
+
+    //The minimum increment for a bid. This is an english auction style system where bids increase
+    access(self) let minimumBidIncrement: UFix64
+
+    // The last price of auction (current price)
+    access(self) var lastPrice: UFix64;
+
+    // The capablity to send the escrow bidVault affiliate 
+    access(self) var affiliateVaultCap: Capability<&{FungibleToken.Receiver}>?;
+
+    // The capability that points to the resource where you want the NFT transfered to if you win this bid. 
+    access(self) var recipientCollectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>?;
+
+    // The capablity to send the escrow bidVault to if you are outbid
+    access(self) var recipientVaultCap: Capability<&{FungibleToken.Receiver}>?;
+
+    // The capability for the owner of the NFT to return the item to if the auction is cancelled
+    access(self) let ownerCollectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>;
+
+    // The capability to pay the owner of the item when the auction is done
+    access(self) let ownerVaultCap: Capability<&{FungibleToken.Receiver}>;
+
+    access(self) let storeID: UInt64;
+
+    init(
+        nft: @AvatarArtNFT.NFT,
+        bidVault: @FungibleToken.Vault,
+        startTime: UFix64,
+        endTime: UFix64,
+        startPrice: UFix64, 
+        minimumBidIncrement: UFix64, 
+        ownerCollectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>,
+        ownerVaultCap: Capability<&{FungibleToken.Receiver}>,
+        storeID: UInt64
+    ) {
+        pre {
+          bidVault.balance == 0.0: "AuctionItem init: Bid Vault should be empty (balance = 0.0)"
+          endTime > startTime: "Endtime should be greater than start time"
+          endTime > getCurrentBlock().timestamp: "End time should be greater than current time"
         }
+
+        AvatarArtAuction.totalAuctions = AvatarArtAuction.totalAuctions + 1
+        self.nft <- nft;
+        self.bidVault <- bidVault;
+        self.startPrice = startPrice;
+        self.minimumBidIncrement = minimumBidIncrement;
+        self.lastPrice = 0.0;
+        self.startTime = startTime;
+        self.endTime = endTime;
+        self.auctionCompleted = false;
+
+        self.recipientCollectionCap = nil;
+        self.recipientVaultCap = nil;
+        self.affiliateVaultCap = nil;
+
+        self.ownerCollectionCap = ownerCollectionCap;
+        self.ownerVaultCap = ownerVaultCap;
+        self.numberOfBids = 0;
+        self.storeID = storeID;
     }
 
-    pub resource interface AuctionNFTReceiver{
-        pub fun deposit(nft: @AvatarArtNFT.NFT);
-    } 
-
-    pub resource interface AuctionPublic{
-        pub fun getAuctionInfo(tokenId: UInt64): AuctionItem?;
-        pub fun place(
-            tokenId: UInt64,
-            price: UFix64,
-            affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
-            placeUserTokenReceiver: Capability<&{FungibleToken.Receiver}>,
-            placeUserAuctionNftReceiver: Capability<&{AuctionNFTReceiver}>,
-            token: @FungibleToken.Vault);
-
-        pub fun distribute(
-            tokenId: UInt64,
-            feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
-            feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>);
-
-        pub fun isExisted(tokenId: UInt64): Bool;
+    // sendNFT sends the NFT to the Collection belonging to the provided Capability
+    access(self) fun sendNFT(_ capability: Capability<&{AvatarArtNFT.CollectionPublic}>) {
+        // Try send the NFT to provided cap
+        let collectionRef = capability.borrow()!;
+        let nft <- self.nft <- nil
+        collectionRef.deposit(token: <-nft!)
     }
 
-    pub resource Auction : AuctionPublic, AuctionNFTReceiver{
-        pub var ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>;
-        pub var ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>;
+    // send the bid tokens to the Vault Receiver belonging to the provided Capability
+    access(self) fun sendBidTokens(_ capability: Capability<&{FungibleToken.Receiver}>) {
+        // Send bid tokens to the given capability
+        let vaultRef = capability.borrow();
+        let bidVaultRef = &self.bidVault as &FungibleToken.Vault
 
-        pub var auctionInfos: {UInt64: AuctionItem};
-        pub var auctionings:  {UInt64: Bool};
-       
-        pub var keptVaults: @{UInt64: FungibleToken.Vault};
-        pub var nfts: @{UInt64: AvatarArtNFT.NFT};
-
-        pub fun getAuctionInfo(tokenId:UInt64): AuctionItem?{
-          return self.auctionInfos[tokenId];
+        if bidVaultRef.balance > 0.0 {
+            vaultRef!.deposit(from: <-bidVaultRef.withdraw(amount: bidVaultRef.balance))
         }
-
-        access(self) fun getPriceStep(price: UFix64): UFix64?{
-          var priceStep: UFix64 = 0.0;
-          var prevPrice: UFix64 = 0.0;
-          for key in AvatarArtAuction.priceSteps.keys{
-              if(key == price){
-                  return AvatarArtAuction.priceSteps[key];
-              }else if(key < price && prevPrice < key){
-                  priceStep = AvatarArtAuction.priceSteps[key]!;
-                  prevPrice = key;
-              }
-          }
-
-          return priceStep;
-        }
-
-        pub fun createNewAuction(
-            startTime: UFix64,
-            endTime: UFix64,
-            nft: @AvatarArtNFT.NFT){
-            pre{
-                self.auctionInfos[nft.id] == nil: "Auction has been created";
-                AvatarArtAuction.nftStartPrices[nft.id] != nil && 
-                AvatarArtAuction.nftStartPrices[nft.id]! > 0.0:
-                    "Can not create new auction";
-            }
-            let price = AvatarArtAuction.nftStartPrices[nft.id]!;
-            let tokenId = nft.id;
-
-            self.auctionInfos[tokenId] = AuctionItem(
-                startTime: startTime, 
-                endTime: endTime,
-                startPrice: price);
-
-            self.auctionings[tokenId] = true;
-
-            let oldNft <- self.nfts.insert(key: tokenId, <- nft);
-            destroy oldNft;
-
-            emit NewAuctionCreated(tokenId: tokenId, startTime: startTime, endTime: endTime, startPrice: price);
-        }
-
-        pub fun userCreateNewAuction(
-            tokenId: UInt64,
-            price: UFix64,
-            startTime: UFix64,
-            endTime: UFix64){
-            pre{
-                self.auctionInfos[tokenId] == nil: "Auction has been created";
-                AvatarArtAuction.nftStartPrices[tokenId] != nil && 
-                AvatarArtAuction.nftStartPrices[tokenId]! == 0.0:
-                    "Can not create new auction";
-                self.nfts[tokenId] != nil: "User does not own NFT";
-            }
-            var startPrice = price;
-            if(AvatarArtAuction.firstSolds[tokenId] == false){
-                startPrice = AvatarArtAuction.nftStartPrices[tokenId]!;
-            }
-
-            self.auctionInfos[tokenId] = AuctionItem(
-                startTime: startTime, 
-                endTime: endTime,
-                startPrice: startPrice);
-
-            self.auctionings[tokenId] = true;
-
-            emit NewAuctionCreated(tokenId: tokenId, startTime: startTime, endTime: endTime, startPrice: startPrice);
-        }
-
-        pub fun updateAuctionTime(tokenId: UInt64, startTime: UFix64, endTime: UFix64){
-            pre{
-                self.auctionInfos[tokenId] != nil: "Auction has not been created";
-            }
-
-            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
-
-            auction.startTime = startTime;
-            auction.endTime = endTime;
-
-            self.auctionInfos[tokenId] = auction;
-
-            emit AuctionTimeUpdated(tokenId: tokenId, startTime: startTime, endTime: endTime);
-        }
-
-        pub fun place(
-            tokenId: UInt64,
-            price: UFix64,
-            affiliateTokenReceiver: Capability<&{FungibleToken.Receiver}>?,
-            placeUserTokenReceiver: Capability<&{FungibleToken.Receiver}>,
-            placeUserAuctionNftReceiver: Capability<&{AuctionNFTReceiver}>,
-            token: @FungibleToken.Vault){
-            pre{
-                self.auctionInfos[tokenId] != nil: "Auction has not been created";
-                self.auctionings[tokenId] == true: "NFT is not auctioned";
-                AvatarArtAuction.paymentTypes[tokenId] != nil: "Payment type has not been set";
-                token.isInstance(AvatarArtAuction.paymentTypes[tokenId]!) : "Payment token is not accepted";
-                token.balance == price: "Invalid balance to place";
-            }
-
-            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
-            let currentTime = getCurrentBlock().timestamp;
-            if(currentTime < auction.startTime || currentTime > auction.endTime){
-              panic("Invalid time to place");
-            }
-
-            if(auction.lastPrice + self.getPriceStep(price: auction.startPrice)! > price){
-              panic("Invalid price for price step");
-            }
-
-            let userAddress = placeUserTokenReceiver.address;
-
-            //If has last winner, refund to him
-            let oldVault <- self.keptVaults.insert(key: tokenId, <- token);
-            if(oldVault != nil){
-                //Refund for last winner
-                auction.winnerVaultReceiver!.borrow()!.deposit(from: <- oldVault!);
-            }else{
-                destroy oldVault;
-            }
-
-            //Update winner and last bid price
-            auction.winnerVaultReceiver = placeUserTokenReceiver;
-            auction.winnerAuctionNftReceiver = placeUserAuctionNftReceiver;
-            auction.affiliateTokenReceiver = affiliateTokenReceiver;
-            auction.lastPrice = price;
-            self.auctionInfos[tokenId] = auction;
-
-            emit NewPlace(tokenId: tokenId, price: price, user: userAddress, time: getCurrentBlock().timestamp);
-        }
-
-        pub fun distribute(
-            tokenId: UInt64,
-            feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>,
-            feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>){
-            pre{
-                self.auctionInfos[tokenId] != nil: "Auction has not been created";
-            }
-
-            var auction = self.auctionInfos[tokenId] ?? panic("Auction has not existed");
-            assert(getCurrentBlock().timestamp > auction.endTime, message: "Auction has not ended");
-
-            AvatarArtAuction.nftStartPrices[tokenId] = 0.0;
-
-            var winnerAddress: Address? = nil;
-            if(auction.winnerVaultReceiver != nil){
-                winnerAddress = auction.winnerVaultReceiver!.address;
-                //Deposit nft to winner auction resource
-                let nft <- self.nfts.remove(key: tokenId)!;
-                auction.winnerAuctionNftReceiver!.borrow()!.deposit(nft: <- nft);
-                  
-                let fee = feeReference.borrow()!.getFee(tokenId: tokenId)!;
-                let feeRecepient = feeRecepientReference.borrow()!.getAddress(tokenId: tokenId)!;
-
-                //Distribute for users
-                let tokenVault <- self.keptVaults.remove(key: tokenId)!;
-                var tokenQuantity = tokenVault.balance;
-                if(fee.affiliate != nil && fee.affiliate > 0.0 && auction.affiliateTokenReceiver != nil){
-                    let fee = tokenQuantity * fee.affiliate / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    auction.affiliateTokenReceiver!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                if(fee.storing != nil && fee.storing > 0.0 && feeRecepient.storing != nil){
-                    let fee = tokenQuantity * fee.storing / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    feeRecepient.storing!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                if(fee.insurance != nil && fee.insurance > 0.0 && feeRecepient.insurance != nil){
-                    let fee = tokenQuantity * fee.insurance / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    feeRecepient.insurance!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                if(fee.contractor != nil && fee.contractor > 0.0 && feeRecepient.contractor != nil){
-                    let fee = tokenQuantity * fee.contractor / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    feeRecepient.contractor!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                if(fee.platform != nil && fee.platform > 0.0 && feeRecepient.platform != nil){
-                    let fee = tokenQuantity * fee.platform / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    feeRecepient.platform!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                if(fee.author != nil && fee.author > 0.0 && feeRecepient.author != nil){
-                    let fee = tokenQuantity * fee.author / 100.0;
-                    let feeVault <- tokenVault.withdraw(amount: fee);
-                    feeRecepient.author!.borrow()!.deposit(from: <- feeVault);
-                }
-
-                self.ownerVaultReceiver.borrow()!.deposit(from: <-tokenVault);
-            }else{
-                winnerAddress = self.ownerVaultReceiver.address;
-            }
-
-            //Remove resources
-            self.auctionInfos.remove(key: tokenId);
-            AvatarArtAuction.firstSolds[tokenId] = true;
-            self.auctionings[tokenId] = false;
-
-            emit Distributed(tokenId: tokenId, user: winnerAddress!);
-        }
-
-        pub fun deposit(nft: @AvatarArtNFT.NFT){
-            pre{
-                AvatarArtAuction.nftStartPrices[nft.id]! == 0.0: "Can not deposit nft"; 
-            }
-            let olfNft <- self.nfts.insert(key: nft.id, <- nft);
-            destroy  olfNft;
-        }
-
-        pub fun withdrawNFT(tokenId: UInt64): @AvatarArtNFT.NFT{
-            pre{
-                AvatarArtAuction.withdrawables[tokenId] == true:
-                    "Can not withdraw NFT";
-                self.nfts[tokenId] != nil: "NFT has not existed";
-            }
-
-            AvatarArtAuction.nftStartPrices.remove(key: tokenId);
-            AvatarArtAuction.withdrawables.remove(key: tokenId);
-            AvatarArtAuction.firstSolds.remove(key: tokenId);
-            self.auctionings.remove(key: tokenId);
-            return <- self.nfts.remove(key: tokenId)!;
-        }
-
-        pub fun isExisted(tokenId: UInt64): Bool{
-            return self.nfts[tokenId] != nil;
-        }
-
-        init(
-            ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>,
-            ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>){
-            self.auctionInfos = {};
-            self.keptVaults <- {};
-            self.nfts <- {};
-            self.auctionings = {};
-            self.ownerVaultReceiver = ownerVaultReceiver;
-            self.ownerNftReceiver = ownerNftReceiver;
-        }
-
-        destroy() {
-            destroy self.keptVaults;
-            destroy self.nfts;
-        }
-    }
-
-    pub resource Administrator{
-        pub fun setNftPrice(tokenId: UInt64, startPrice: UFix64){
-            pre{
-                AvatarArtAuction.nftStartPrices[tokenId] == nil: "Can not set price";
-            }
-            AvatarArtAuction.nftStartPrices[tokenId] = startPrice;
-        }
-
-        pub fun setPaymentType(tokenId: UInt64, paymentType: Type){
-            AvatarArtAuction.paymentTypes[tokenId] = paymentType;
-        }
-
-        pub fun setPriceStep(price: UFix64, priceStep: UFix64){
-            AvatarArtAuction.priceSteps[price] = priceStep;
-        }
-
-        pub fun allowUserToWithdraw(tokenId: UInt64){
-            AvatarArtAuction.withdrawables[tokenId] = true;
-        }
-    }
-
-    pub fun createNewAuction(
-        ownerVaultReceiver: Capability<&{FungibleToken.Receiver}>,
-        ownerNftReceiver: Capability<&{NonFungibleToken.Receiver}>): @Auction{
-        return <- create Auction(
-            ownerVaultReceiver: ownerVaultReceiver,
-            ownerNftReceiver: ownerNftReceiver);
     }
     
-    init(){
-        self.AuctionStoragePath = /storage/avatarArtAdminAuction;
-        self.AuctionPublicPath = /public/avatarArtAdminAuction;
-        self.AdminStoragePath = /storage/avatarArtAuctionAdmin;
+    access(self) fun releasePreviousBid() {
+        if let vaultCap = self.recipientVaultCap {
+            self.sendBidTokens(self.recipientVaultCap!);
 
-        self.nftStartPrices = {};
-        self.paymentTypes = {};
-        self.priceSteps = {};
-        self.withdrawables = {};
-        self.firstSolds = {};
+            self.recipientCollectionCap = nil;
+            self.recipientVaultCap = nil;
+            self.affiliateVaultCap = nil;
 
-        self.account.save(<- create Administrator(), to: self.AdminStoragePath);
+            return
+        } 
     }
+
+
+    access(contract) fun returnAuctionItemToOwner() {
+      // release the bidder's tokens
+      self.releasePreviousBid()
+
+      // deposit the NFT into the owner's collection
+      self.sendNFT(self.ownerCollectionCap)
+    }
+
+    //this can be negative if is expired
+    pub fun timeRemaining() : Fix64 {
+        let currentTime = getCurrentBlock().timestamp
+        return Fix64(self.endTime) - Fix64(currentTime)
+    }
+
+  
+    pub fun isAuctionExpired(): Bool {
+        let timeRemaining= self.timeRemaining()
+        return timeRemaining < Fix64(0.0)
+    }
+
+    pub fun minNextBid() :UFix64{
+        //If there are bids then the next min bid is the current price plus the increment
+        if self.lastPrice != 0.0 {
+            return self.lastPrice + self.minimumBidIncrement
+        }
+        //else start price
+        return self.startPrice
+    }
+
+    pub fun bidder() : Address? {
+        if let vaultCap = self.recipientVaultCap {
+            return vaultCap.address
+        }
+        return nil
+    }
+
+    pub fun currentBidForUser(address: Address): UFix64 {
+          if self.bidder() == address {
+            return self.bidVault.balance
+        }
+        return 0.0
+    }
+
+    pub fun placeBid(
+            price: UFix64,
+            affiliateVaultCap: Capability<&{FungibleToken.Receiver}>?,
+            vaultCap: Capability<&{FungibleToken.Receiver}>,
+            collectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>,
+            bidTokens: @FungibleToken.Vault){
+      pre {
+        self.nft != nil: "The selling NFT doesnot exist"
+      }
+
+      assert(bidTokens.isInstance(self.bidVault.getType()), message: "Payment token is not allow")
+
+
+      let currentTime = getCurrentBlock().timestamp;
+      if currentTime < self.startTime || currentTime > self.endTime {
+        panic("Invalid time to place");
+      }
+
+      let bidderAddress = vaultCap.address;
+      let collectionAddress = collectionCap.address;
+      if bidderAddress != collectionAddress {
+        panic("you cannot make a bid and send the art to sombody elses collection")
+      }
+
+      let biddingAmount = bidTokens.balance + self.currentBidForUser(address: bidderAddress);
+      let minNextBid = self.minNextBid();
+      if biddingAmount < minNextBid {
+          panic(
+            "bid amount + (your current bid) must be larger or equal to the current price + minimum bid increment "
+            .concat(biddingAmount.toString())
+            .concat(" < ")
+            .concat(minNextBid.toString()))
+      }
+
+
+      // Check incomming bidder and last bidder are same?
+      if self.bidder() != bidderAddress {
+        if self.bidVault.balance != 0.0 {
+
+          // IF not, Refund to previous bidder
+          self.sendBidTokens(self.recipientVaultCap!);
+        }
+      }
+
+      // Update the auction item
+      self.bidVault.deposit(from: <-bidTokens);
+
+      //update the capability of the wallet for the address with the current highest bid
+      self.recipientVaultCap = vaultCap;
+
+      // Add the bidder's Vault and NFT receiver references
+      self.recipientCollectionCap = collectionCap;
+
+      // Update the current price of the token
+      self.lastPrice = self.bidVault.balance;
+
+      self.numberOfBids = self.numberOfBids + 1;
+
+      emit Bid(
+        storeID: self.storeID,
+        tokenID: self.nft?.id!, auctionID: self.uuid,
+        bidderAddress: bidderAddress, bidPrice: self.lastPrice,
+        time: getCurrentBlock().timestamp
+      );
+    }
+
+    access(self) fun settleFee(artId: UInt64) {
+        if AvatarArtAuction.feeReference == nil || AvatarArtAuction.feeRecepientReference == nil {
+          return
+        }
+
+        let feeOp = AvatarArtAuction.feeReference!.borrow()!.getFee(tokenId: artId);
+        let feeRecepientOp = AvatarArtAuction.feeRecepientReference!.borrow()!.getAddress(
+              tokenId: artId,
+              payType: self.bidVault.getType()
+        )
+
+        if feeOp == nil || feeRecepientOp == nil {
+          return 
+        }
+
+        let fee = feeOp!;
+        let feeRecepient = feeRecepientOp!;
+
+
+        let cutFee = CutFee()
+
+        // Affiliate
+        if fee.affiliate != nil && fee.affiliate > 0.0 && self.affiliateVaultCap != nil
+            && self.affiliateVaultCap!.check() {
+            let fee = self.lastPrice * fee.affiliate / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            self.affiliateVaultCap!.borrow()!.deposit(from: <- feeVault);
+            cutFee.affiliate = fee;
+        }
+
+        // Storage fee
+        if fee.storing != nil && fee.storing > 0.0 && feeRecepient.storing != nil
+            && feeRecepient.storing!.check() {
+            let fee = self.lastPrice * fee.storing / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            feeRecepient.storing!.borrow()!.deposit(from: <- feeVault);
+            cutFee.storing = fee;
+        }
+
+        // Insurrance Fee
+        if fee.insurance != nil && fee.insurance > 0.0 && feeRecepient.insurance != nil
+          && feeRecepient.insurance!.check() {
+            let fee = self.lastPrice * fee.insurance / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            feeRecepient.insurance!.borrow()!.deposit(from: <- feeVault);
+            cutFee.insurance = fee;
+        }
+
+        // Dev
+        if fee.contractor != nil && fee.contractor > 0.0 && feeRecepient.contractor != nil
+            && feeRecepient.contractor!.check() {
+            let fee = self.lastPrice * fee.contractor / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            feeRecepient.contractor!.borrow()!.deposit(from: <- feeVault);
+            cutFee.contractor = fee;
+        }
+
+        // The Platform
+        if fee.platform != nil && fee.platform > 0.0 && feeRecepient.platform != nil
+          && feeRecepient.platform!.check() {
+            let fee = self.lastPrice * fee.platform / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            feeRecepient.platform!.borrow()!.deposit(from: <- feeVault);
+            cutFee.platform = fee;
+        }
+
+        // Author
+        if fee.author != nil && fee.author > 0.0 && feeRecepient.author != nil
+          &&  feeRecepient.author!.check()  {
+            let fee = self.lastPrice * fee.author / 100.0;
+            let feeVault <- self.bidVault.withdraw(amount: fee);
+            feeRecepient.author!.borrow()!.deposit(from: <- feeVault);
+            cutFee.author = fee;
+        }
+
+        emit CuttedFee(storeID: self.storeID, auctionID: self.uuid, fee: cutFee);
+    }
+
+    access(contract) fun settleAuction() {
+        pre {
+          getCurrentBlock().timestamp > self.endTime: "Auction has not ended";
+          !self.auctionCompleted : "The auction is already settled"
+          self.nft != nil: "The selling NFT doesnot exist";
+          self.isAuctionExpired() : "Auction has not completed yet";
+        }
+
+       // return if there are no bids to settle
+        if self.lastPrice == 0.0 {
+            self.returnAuctionItemToOwner();
+            return
+        }
+
+        let artId = self.nft?.id!;
+
+        self.settleFee(artId: artId);
+        self.sendNFT(self.recipientCollectionCap!);
+        self.sendBidTokens(self.ownerVaultCap);
+
+        self.auctionCompleted = true;
+
+
+        emit AuctionCompleted(storeID: self.storeID, auctionID: self.uuid, tokenPurchased: true);
+        emit TokenPurchased(
+            storeID: self.storeID,
+            auctionID: self.uuid, 
+            tokenID: artId, 
+            price: self.lastPrice, 
+            from: self.ownerVaultCap.address, 
+            to: self.recipientCollectionCap?.address);
+    } 
+
+    pub fun getDetails(): AuctionDetail {
+        var leader:Address? = nil;
+        if let recipient = self.recipientVaultCap {
+            leader = recipient.address
+        }
+
+        return AuctionDetail(
+            id: self.uuid,
+            currentPrice: self.lastPrice, 
+            bids: self.numberOfBids,
+            active: !self.auctionCompleted  && !self.isAuctionExpired(),
+            timeRemaining: self.timeRemaining(),
+            artId: self.nft?.id,
+            minimumBidIncrement: self.minimumBidIncrement,
+            owner: self.ownerVaultCap.address,
+            startTime: self.startTime,
+            endTime: self.endTime,
+            minNextBid: self.minNextBid(),
+            completed: self.auctionCompleted,
+            expired: self.isAuctionExpired(),
+            leader: leader,
+        )
+    }
+
+    destroy() {
+      // send the NFT back to auction owner
+      if self.nft != nil {
+          self.sendNFT(self.ownerCollectionCap);
+      }
+      
+      // if there's a bidder...
+      if let vaultCap = self.recipientVaultCap {
+          // ...send the bid tokens back to the bidder
+          self.sendBidTokens(vaultCap);
+      }
+
+      if !self.auctionCompleted {
+        emit AuctionCompleted(storeID: self.storeID, auctionID: self.uuid, tokenPurchased: false);
+      }
+
+      destroy self.nft;
+      destroy self.bidVault;
+    }
+
+  }
+
+
+
+  pub resource interface AuctionStorePublic {
+    pub fun createStandaloneAuction(
+        token: @AvatarArtNFT.NFT, 
+        bidVault: @FungibleToken.Vault,
+        startTime: UFix64,
+        endTime: UFix64,
+        startPrice: UFix64, 
+        collectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>, 
+        vaultCap: Capability<&{FungibleToken.Receiver}>
+    ) : UInt64;
+
+    pub fun getAuctionIDs(): [UInt64];
+    pub fun borrowAuction(auctionID: UInt64): &AuctionItem{AuctionPublic}?;
+  }
+
+  pub resource interface AuctionStoreManager {
+    pub fun cancelAuction(auctionID: UInt64);
+    pub fun settleAuction(auctionID: UInt64);
+  }
+
+  pub resource AuctionStore: AuctionStorePublic, AuctionStoreManager {
+    access(self) let auctions: @{UInt64: AuctionItem};
+
+    //this method is used to create a standalone auction that is not part of a collection
+    //we use this to create the unique part of the Versus contract
+    pub fun createStandaloneAuction(
+        token: @AvatarArtNFT.NFT, 
+        bidVault: @FungibleToken.Vault,
+        startTime: UFix64,
+        endTime: UFix64,
+        startPrice: UFix64, 
+        collectionCap: Capability<&{AvatarArtNFT.CollectionPublic}>, 
+        vaultCap: Capability<&{FungibleToken.Receiver}>,
+    ) : UInt64 {
+        pre {
+          AvatarArtTransactionInfo.isCurrencyAccepted(type: bidVault.getType()): "Currency not allow"
+        }
+
+        let nftID = token.id;
+        let nftType = token.getType();
+        let ftType = bidVault.getType();
+
+        // create a new auction items resource container
+        let auctionItem  <- create AuctionItem(
+            nft: <-token,
+            bidVault: <- bidVault,
+            startTime: startTime,
+            endTime: endTime,
+            startPrice: startPrice,
+            minimumBidIncrement: AvatarArtAuction.getPriceStep(price: startPrice),
+            ownerCollectionCap: collectionCap,
+            ownerVaultCap: vaultCap,
+            storeID: self.uuid
+        )
+
+        let auctionId = auctionItem.uuid;
+        let oldAuc <- self.auctions[auctionId] <- auctionItem;
+        destroy oldAuc;
+
+        emit AuctionAvailable(
+              storeAddress: self.owner?.address!,
+              auctionID: auctionId,
+              nftType: nftType,
+              nftID: nftID,
+              ftVaultType: ftType,
+              startPrice: startPrice,
+              startTime: startTime,
+              endTime: endTime
+          )
+
+        return auctionId;
+    }
+
+    pub fun getAuctionIDs(): [UInt64] {
+      return self.auctions.keys;
+    }
+
+    pub fun borrowAuction(auctionID: UInt64): &AuctionItem{AuctionPublic}? {
+      if self.auctions[auctionID] != nil {
+        return  &self.auctions[auctionID] as! &AuctionItem{AuctionPublic};
+      } else {
+        return nil;
+      }
+    }
+
+    pub fun cancelAuction(auctionID: UInt64) {
+      let auction <- self.auctions.remove(key: auctionID) ?? panic("could not find auction with given id")
+      auction.returnAuctionItemToOwner();
+
+      destroy auction;
+    }
+
+    pub fun settleAuction(auctionID: UInt64) {
+      let auction <- self.auctions.remove(key: auctionID) ?? panic("could not find auction with given id")
+      auction.settleAuction();
+
+      destroy auction;
+    }
+
+    destroy() {
+      destroy  self.auctions;
+
+      emit StoreDestroyed(storeID: self.uuid);
+    }
+
+    init() {
+      self.auctions <- {};
+
+      emit StoreInitialized(storeID: self.uuid);
+    }
+
+}
+
+  pub resource Administrator {
+    pub fun setPriceStep(price: UFix64, priceStep: UFix64){
+       AvatarArtAuction.priceSteps[price] = priceStep;
+    }
+
+    pub fun setFeePreference(
+      feeReference: Capability<&AvatarArtTransactionInfo.FeeInfo{AvatarArtTransactionInfo.PublicFeeInfo}>,
+      feeRecepientReference: Capability<&AvatarArtTransactionInfo.TransactionAddress{AvatarArtTransactionInfo.PublicTransactionAddress}>
+    ) {
+      AvatarArtAuction.feeRecepientReference = feeRecepientReference;
+      AvatarArtAuction.feeReference = feeReference;
+    }
+
+  }
+
+  access(self) fun getPriceStep(price: UFix64): UFix64 {
+      var priceStep: UFix64 = 0.0;
+      var prevPrice: UFix64 = 0.0;
+
+      for key in AvatarArtAuction.priceSteps.keys{
+          if key == price {
+              return AvatarArtAuction.priceSteps[key]!;
+          } else if key < price && prevPrice < key {
+              priceStep = AvatarArtAuction.priceSteps[key]!;
+              prevPrice = key;
+          }
+      }
+
+      return priceStep;
+  }
+
+  pub fun createAuctionStore(): @AuctionStore {
+      return <-create AuctionStore()
+  }
+
+  init() {
+    self.totalAuctions = 0;
+
+    self.priceSteps = {};
+    self.feeRecepientReference = nil;
+    self.feeReference = nil;
+
+    // TODO: Remove suffix
+    self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore;
+    self.AuctionStorePublicPath = /public/avatarArtAuctionStore;
+    self.AdminStoragePath = /storage/avatarArtAuctionAdmin;
+
+    self.account.save(<- create Administrator(), to: self.AdminStoragePath);
+  }
 }
