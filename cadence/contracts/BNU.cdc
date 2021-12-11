@@ -1,5 +1,4 @@
-//import FungibleToken from "./FungibleToken.cdc"
-import FungibleToken from 0x01;
+import FungibleToken from "./FungibleToken.cdc";
 
 pub contract BNU: FungibleToken {
 
@@ -69,7 +68,7 @@ pub contract BNU: FungibleToken {
     }
 
     init() {
-        self.AdminStoragePath = /storage/bnuAdmin
+        self.AdminStoragePath = /storage/bnuAdmin;
         self.ReceiverPath = /public/bnuReceiver;
         self.StorageVaultPath = /storage/bnuVault;
         self.totalSupply = 0.0

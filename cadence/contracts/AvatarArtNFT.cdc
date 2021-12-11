@@ -1,5 +1,4 @@
-//import NonFungibleToken from "./NonFungibleToken.cdc"
-import NonFungibleToken from 0x01
+import NonFungibleToken from "./NonFungibleToken.cdc";
 
 // AvatarArtNFT
 // NFT items for AvatarArt!
@@ -8,9 +7,9 @@ pub contract AvatarArtNFT: NonFungibleToken {
 
     // Events
     pub event ContractInitialized()
-    pub event Withdraw(tokenId: UInt64, from: Address?)
-    pub event Deposit(tokenId: UInt64, to: Address?)
-    pub event Minted(tokenId: UInt64)
+    pub event Withdraw(id: UInt64, from: Address?)
+    pub event Deposit(id: UInt64, to: Address?)
+    pub event Minted(tokenId: UInt64, metadata: String);
 
     // Named Paths
     pub let CollectionStoragePath: StoragePath
@@ -29,18 +28,20 @@ pub contract AvatarArtNFT: NonFungibleToken {
     pub resource NFT: NonFungibleToken.INFT {
         // The token's ID
         pub let id: UInt64
+        pub let metadata: String;
 
         // initializer
         //
-        init(initID: UInt64) {
+        init(initID: UInt64, metadata: String) {
             self.id = initID
+            self.metadata = metadata;
         }
     }
 
     // This is the interface that users can cast their AvatarArtNFT Collection as
     // to allow others to deposit AvatarArtNFT into their Collection. It also allows for reading
     // the details of AvatarArtNFT in the Collection.
-    pub resource interface AvatarArtNFTCollectionPublic {
+    pub resource interface CollectionPublic {
         pub fun deposit(token: @NonFungibleToken.NFT)
         pub fun getIDs(): [UInt64]
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT
@@ -57,7 +58,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     // Collection
     // A collection of AvatarArtNFT NFTs owned by an account
     //
-    pub resource Collection: AvatarArtNFTCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
+    pub resource Collection: CollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
         // dictionary of NFT conforming tokens
         // NFT is a resource type with an `UInt64` ID field
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
@@ -68,7 +69,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
-            emit Withdraw(tokenId: token.id, from: self.owner?.address)
+            emit Withdraw(id: token.id, from: self.owner?.address)
 
             return <-token
         }
@@ -85,7 +86,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
             // add the new token to the dictionary which removes the old one
             let oldToken <- self.ownedNFTs[id] <- token
 
-            emit Deposit(tokenId: id, to: self.owner?.address)
+            emit Deposit(id: id, to: self.owner?.address)
 
             destroy oldToken
         }
@@ -148,13 +149,15 @@ pub contract AvatarArtNFT: NonFungibleToken {
         // Mints a new NFT with a new ID
 		// and deposit it in the recipients collection using their collection reference
         //
-		pub fun mintNFT(tokenId: UInt64, recipient: &{AvatarArtNFT.AvatarArtNFTCollectionPublic}) {
-            emit Minted(tokenId: tokenId)
+		pub fun mintNFT(metadata: String, recipient: &{AvatarArtNFT.CollectionPublic}) {
+            // ID start from 1000
+            let id = (1000 as UInt64) + AvatarArtNFT.totalSupply;
 
+            emit Minted(tokenId: id, metadata: metadata);
 			// deposit it in the recipient's account using their reference
-			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: tokenId))
+			recipient.deposit(token: <-create AvatarArtNFT.NFT(initID: id, metadata: metadata))
 
-            AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + (1 as UInt64)
+            AvatarArtNFT.totalSupply = AvatarArtNFT.totalSupply + 1;
 		}
 	}
 
@@ -167,7 +170,7 @@ pub contract AvatarArtNFT: NonFungibleToken {
     pub fun fetch(_ from: Address, itemID: UInt64): &AvatarArtNFT.NFT? {
         let collection = getAccount(from)
             .getCapability(AvatarArtNFT.CollectionPublicPath)
-            .borrow<&AvatarArtNFT.Collection{AvatarArtNFT.AvatarArtNFTCollectionPublic}>()
+            .borrow<&AvatarArtNFT.Collection{AvatarArtNFT.CollectionPublic}>()
             ?? panic("Couldn't get collection")
         // We trust AvatarArtNFT.Collection.borowAvatarArtNFT to get the correct itemID
         // (it checks it before returning it).
