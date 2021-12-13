@@ -344,9 +344,9 @@ pub contract AvatarArtMarketplace {
         self.feeReference = nil
         self.feeRecepientReference = nil
 
-        self.AdminStoragePath = /storage/avatarArtMarketplaceAdmin
-        self.SaleCollectionStoragePath = /storage/avatarArtMarketplaceSaleCollection
-        self.SaleCollectionPublicPath = /public/avatarArtMarketplaceSaleCollection
+        self.AdminStoragePath = /storage/AvatarArtMarketplaceAdmin04
+        self.SaleCollectionStoragePath = /storage/AvatarArtMarketplaceSaleCollection04
+        self.SaleCollectionPublicPath = /public/AvatarArtMarketplaceSaleCollection04
 
         self.account.save(<- create Administrator(), to: self.AdminStoragePath)
     }

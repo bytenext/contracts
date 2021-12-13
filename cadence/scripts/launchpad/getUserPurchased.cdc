@@ -11,10 +11,10 @@ pub fun main(padAddress: Address, padId: Int, userAddress: Address): {String: An
   let info = launchpad.getLaunchpadInfo(id: padId);
 
   if info != nil {
-    let purchased = (info!._userBoughts[userAddress] ?? 0.0) ;
+    let userBought = (info!._userBoughts[userAddress] ?? 0.0) ;
     return {
-      "purchased": purchased,
-      "tokenPaid": purchased * info!._tokenPrice,
+      "purchased": userBought / info!._tokenPrice,
+      "tokenPaid": userBought,
       "price": info!._tokenPrice
     }
   }

@@ -181,10 +181,10 @@ pub contract AvatarArtNFT: NonFungibleToken {
     //
 	init() {
         // Set our named paths
-        self.CollectionStoragePath = /storage/avatarArtNFTCollection;
-        self.CollectionPublicPath = /public/avatarArtNFTCollection;
-        self.MinterStoragePath = /storage/avatarArtNFTMinter;
-        self.ReceiverPublicPath = /public/avatarArtReceiver;
+        self.CollectionStoragePath = /storage/avatarArtNFTCollection04;
+        self.CollectionPublicPath = /public/avatarArtNFTCollection04;
+        self.MinterStoragePath = /storage/avatarArtNFTMinter04;
+        self.ReceiverPublicPath = /public/avatarArtReceiver04;
 
         // Initialize the total supply
         self.totalSupply = 0

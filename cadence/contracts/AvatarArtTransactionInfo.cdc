@@ -186,11 +186,11 @@ pub contract AvatarArtTransactionInfo {
 
     init(){
         self.acceptCurrencies = [];
-        self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo;
-        self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo;
+        self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo04;
+        self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo04;
 
-        self.TransactionAddressStoragePath = /storage/avatarArtTransactionInfoRecepientAddress;
-        self.TransactionAddressPublicPath = /public/avatarArtTransactionInfoRecepientAddress;
+        self.TransactionAddressStoragePath = /storage/avatarArtTransactionInfoRecepientAddress04;
+        self.TransactionAddressPublicPath = /public/avatarArtTransactionInfoRecepientAddress04;
 
         let feeInfo <- create FeeInfo();
         self.account.save(<- feeInfo, to: self.FeeInfoStoragePath);
@@ -206,7 +206,7 @@ pub contract AvatarArtTransactionInfo {
             AvatarArtTransactionInfo.TransactionAddressPublicPath,
             target: AvatarArtTransactionInfo.TransactionAddressStoragePath);
 
-        self.AdminStoragePath = /storage/avatarArtTransactionInfoAdmin
+        self.AdminStoragePath = /storage/avatarArtTransactionInfoAdmin04
         self.account.save(<- create Administrator(), to: self.AdminStoragePath);
     }
 }

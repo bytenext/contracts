@@ -23,7 +23,7 @@ import {
 } from '../src/avatar-art-nft';
 import { deployBnu, mintBnu, setupBnuOnAccount } from '../src/bnu';
 import { deployFUSD } from '../src/transaction-info';
-import { getCurrentTimestamp, sleep, tx } from '../src/util';
+import { getCurrentTimestamp, sleep, tx, waitToTimeOver } from '../src/util';
 
 // We need to set timeout for a higher number, because some transactions might take up some time
 jest.setTimeout(500000);
@@ -55,7 +55,6 @@ describe('Avatar Art Auction', () => {
 
     await shallPass(setupAuctionStoreOnAccount(Alice));
     await shallPass(setupFeePreference());
-
     await shallPass(setupCurreniesAllow());
   });
 
@@ -95,8 +94,6 @@ describe('Avatar Art Auction', () => {
     const startPrice = 3;
 
     // Create an auction with start time > endtime
-    await shallRevert();
-
     const [, e] = await createAuction(
       seller,
       nftID,
@@ -215,9 +212,7 @@ describe('Avatar Art Auction', () => {
     expect(error).toContain('Invalid time to place');
 
     // Increase block timestamp in emulator 2 seconds
-    await sleep(2000);
-    await mintBnu(buyer, 1000);
-    await sleep(1000);
+    await waitToTimeOver(startTime + 1);
 
     [, error] = await placeBid(buyer, seller, auctionID, startPrice - 20);
     expect(error).not.toBeNull();
@@ -226,8 +221,7 @@ describe('Avatar Art Auction', () => {
     );
 
     // Increase block timestamp in emulator 4 seconds to end auction
-    await sleep(1000);
-    await mintBnu(buyer, 1000);
+    waitToTimeOver(endTime + 1);
 
     const now2 = await getCurrentTimestamp();
     if (now2 > endTime) {
@@ -249,22 +243,15 @@ describe('Avatar Art Auction', () => {
 
     const nftID = 1000;
     const startTime = now;
-    const endTime = +now + 1;
+    const endTime = +now + 5;
     const startPrice = 3;
 
     // Create an auction
     const [data] = await shallPass(
       tx(createAuction(seller, nftID, startTime, endTime, startPrice))
     );
-    await sleep(2000);
-    await mintBnu(seller, 1000);
-    await mintBnu(seller, 1000);
 
-    const now2 = await getCurrentTimestamp();
-    if (now2 <= endTime) {
-      console.warn('Auction not expired');
-      return;
-    }
+    await waitToTimeOver(endTime + 1);
 
     const event = data.events.find(({ type }) =>
       type.includes('AvatarArtAuction.AuctionAvailable')
@@ -294,7 +281,7 @@ describe('Avatar Art Auction', () => {
 
     const nftID = 1000;
     const startTime = now;
-    const endTime = +now + 2;
+    const endTime = +now + 20;
     const startPrice = 3;
 
     // Create an auction
@@ -309,12 +296,7 @@ describe('Avatar Art Auction', () => {
     let [, error] = await placeBid(buyer, seller, auctionID, startPrice);
     expect(error).toBeNull();
 
-    await sleep(2000);
-    await mintBnu(seller, 1000);
-    await sleep(1000);
-    await mintBnu(seller, 1000);
-    await mintBnu(seller, 1000);
-    await mintBnu(seller, 1000);
+    await waitToTimeOver(endTime + 1);
 
     const now2 = await getCurrentTimestamp();
     if (now2 <= endTime) {

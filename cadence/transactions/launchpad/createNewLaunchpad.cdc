@@ -13,7 +13,7 @@ transaction(startTime: UFix64, endTime: UFix64,
       let launchpad = signer.borrow<&ByteNextLaunchpad.Launchpad>(from: ByteNextLaunchpad.LaunchpadStoragePath)
           ?? panic("Could not borrow launchpad from address");
 
-      let tokenReceiver = getAccount(receiverAddr).getCapability<&BNU.Vault{FungibleToken.Receiver}>(/public/bnuReceiver01)
+      let tokenReceiver = getAccount(receiverAddr).getCapability<&BNU.Vault{FungibleToken.Receiver}>(BNU.ReceiverPath)
       if !tokenReceiver.check() {
         panic("Should setup your BNU Receiver")
       }

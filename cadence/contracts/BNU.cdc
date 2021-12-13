@@ -11,6 +11,7 @@ pub contract BNU: FungibleToken {
     // The storage path for the admin resource
     pub let AdminStoragePath: StoragePath;
     pub let StorageVaultPath: StoragePath;
+    pub let BalancePublicPath: PublicPath;
     pub let ReceiverPath: PublicPath;
 
     // Total supply of bnu in existence
@@ -68,9 +69,10 @@ pub contract BNU: FungibleToken {
     }
 
     init() {
-        self.AdminStoragePath = /storage/bnuAdmin;
-        self.ReceiverPath = /public/bnuReceiver;
-        self.StorageVaultPath = /storage/bnuVault;
+        self.AdminStoragePath = /storage/bnuAdmin04
+        self.ReceiverPath = /public/bnuReceiver04
+        self.StorageVaultPath = /storage/bnuVault04
+        self.BalancePublicPath = /public/bnuBalance04
         self.totalSupply = 0.0
 
         let admin <- create Administrator()
@@ -81,13 +83,13 @@ pub contract BNU: FungibleToken {
         self.account.save(<-admin, to: self.AdminStoragePath)
 
         self.account.link<&BNU.Vault{FungibleToken.Receiver}>(
-            /public/bnuReceiver,
-            target: /storage/bnuVault
+            self.ReceiverPath,
+            target: self.StorageVaultPath 
         )
 
         self.account.link<&BNU.Vault{FungibleToken.Balance}>(
-            /public/bnuBalance,
-            target: /storage/bnuVault
+            self.BalancePublicPath,
+            target: self.StorageVaultPath 
         )
     }
 }

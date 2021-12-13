@@ -360,8 +360,8 @@ pub contract ByteNextLaunchpad {
     }
 
     init() {
-        self.LaunchpadStoragePath = /storage/byteNextBnuLaunchpad;
-        self.LaunchpadPublicPath = /public/byteNextPublicBnuLaunchpad;
+        self.LaunchpadStoragePath = /storage/byteNextByteNextLaunchpad;
+        self.LaunchpadPublicPath = /public/byteNextPublicByteNextLaunchpad;
 
         self.account.save(<- create Launchpad(), to: self.LaunchpadStoragePath);
         self.account.link<&Launchpad{LaunchpadPublic}>(self.LaunchpadPublicPath, target: self.LaunchpadStoragePath);
