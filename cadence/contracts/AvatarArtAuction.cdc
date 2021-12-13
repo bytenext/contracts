@@ -14,9 +14,9 @@ pub contract AvatarArtAuction {
   access(self) var feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>?;
   access(self) var feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>?;
 
-  pub event Bid(storeID: UInt64, tokenID: UInt64, auctionID: UInt64, bidderAddress: Address, bidPrice: UFix64, time: UFix64);
+  pub event Bid(storeID: UInt64, nftID: UInt64, auctionID: UInt64, bidderAddress: Address, bidPrice: UFix64, time: UFix64);
   pub event CuttedFee(storeID: UInt64, auctionID: UInt64, fee: CutFee);
-  pub event TokenPurchased(storeID: UInt64, auctionID: UInt64, tokenID: UInt64, price: UFix64, from: Address, to:Address?);
+  pub event TokenPurchased(storeID: UInt64, auctionID: UInt64, nftID: UInt64, price: UFix64, from: Address, to: Address?);
   pub event AuctionCompleted(storeID: UInt64, auctionID: UInt64, tokenPurchased: Bool);
   pub event AuctionAvailable(
     storeAddress: Address,
@@ -39,7 +39,7 @@ pub contract AvatarArtAuction {
       pub let timeRemaining : Fix64;
       pub let endTime : UFix64;
       pub let startTime : UFix64;
-      pub let artId: UInt64?;
+      pub let nftID: UInt64?;
       pub let owner: Address;
       pub let minNextBid: UFix64;
       pub let completed: Bool;
@@ -51,7 +51,7 @@ pub contract AvatarArtAuction {
           bids:UInt64, 
           active: Bool, 
           timeRemaining:Fix64, 
-          artId: UInt64?,
+          nftID: UInt64?,
           minimumBidIncrement: UFix64,
           owner: Address, 
           startTime: UFix64,
@@ -65,7 +65,7 @@ pub contract AvatarArtAuction {
           self.lastPrice = currentPrice;
           self.bids = bids;
           self.timeRemaining = timeRemaining;
-          self.artId = artId;
+          self.nftID = nftID;
           self.mimimumBidIncrement = minimumBidIncrement;
           self.owner = owner;
           self.startTime = startTime;
@@ -326,20 +326,20 @@ pub contract AvatarArtAuction {
 
       emit Bid(
         storeID: self.storeID,
-        tokenID: self.nft?.id!, auctionID: self.uuid,
+        nftID: self.nft?.id!, auctionID: self.uuid,
         bidderAddress: bidderAddress, bidPrice: self.lastPrice,
         time: getCurrentBlock().timestamp
       );
     }
 
-    access(self) fun settleFee(artId: UInt64) {
+    access(self) fun settleFee(nftID: UInt64) {
         if AvatarArtAuction.feeReference == nil || AvatarArtAuction.feeRecepientReference == nil {
           return
         }
 
-        let feeOp = AvatarArtAuction.feeReference!.borrow()!.getFee(tokenId: artId);
+        let feeOp = AvatarArtAuction.feeReference!.borrow()!.getFee(tokenId: nftID);
         let feeRecepientOp = AvatarArtAuction.feeRecepientReference!.borrow()!.getAddress(
-              tokenId: artId,
+              tokenId: nftID,
               payType: self.bidVault.getType()
         )
 
@@ -424,9 +424,9 @@ pub contract AvatarArtAuction {
             return
         }
 
-        let artId = self.nft?.id!;
+        let nftID = self.nft?.id!;
 
-        self.settleFee(artId: artId);
+        self.settleFee(nftID: nftID);
         self.sendNFT(self.recipientCollectionCap!);
         self.sendBidTokens(self.ownerVaultCap);
 
@@ -437,7 +437,7 @@ pub contract AvatarArtAuction {
         emit TokenPurchased(
             storeID: self.storeID,
             auctionID: self.uuid, 
-            tokenID: artId, 
+            nftID: nftID, 
             price: self.lastPrice, 
             from: self.ownerVaultCap.address, 
             to: self.recipientCollectionCap?.address);
@@ -455,7 +455,7 @@ pub contract AvatarArtAuction {
             bids: self.numberOfBids,
             active: !self.auctionCompleted  && !self.isAuctionExpired(),
             timeRemaining: self.timeRemaining(),
-            artId: self.nft?.id,
+            nftID: self.nft?.id,
             minimumBidIncrement: self.minimumBidIncrement,
             owner: self.ownerVaultCap.address,
             startTime: self.startTime,

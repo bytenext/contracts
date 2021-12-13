@@ -1,6 +1,6 @@
 import FungibleToken from "./FungibleToken.cdc";
 
-pub contract BNULaunchpad {
+pub contract ByteNextLaunchpad {
     pub let LaunchpadStoragePath: StoragePath;
     pub let LaunchpadPublicPath: PublicPath;
 

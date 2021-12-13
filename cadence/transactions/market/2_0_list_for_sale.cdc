@@ -1,8 +1,9 @@
 import FungibleToken from "../../contracts/FungibleToken.cdc"
-import AvatarArtMarketplace from "../../contracts/AvatarArtMarketPlace.cdc"
+import AvatarArtMarketplace from "../../contracts/AvatarArtMarketplace.cdc"
 import AvatarArtNFT from "../../contracts/AvatarArtNFT.cdc";
+import BNU from "../../contracts/BNU.cdc";
 
-transaction(tokenReceiverPath: PublicPath, nftID: UInt64, price: UFix64, paymentType: Type) {
+transaction(nftID: UInt64, price: UFix64) {
 
     prepare(signer: AuthAccount) {
         // check to see if sale collection already exists
@@ -13,7 +14,7 @@ transaction(tokenReceiverPath: PublicPath, nftID: UInt64, price: UFix64, payment
             signer.link<&AvatarArtMarketplace.SaleCollection{AvatarArtMarketplace.SalePublic}>(AvatarArtMarketplace.SaleCollectionPublicPath, target: AvatarArtMarketplace.SaleCollectionStoragePath)
         } 
 
-        let ownerCapability = signer.getCapability<&{FungibleToken.Receiver}>(tokenReceiverPath);
+        let ownerCapability = signer.getCapability<&{FungibleToken.Receiver}>(BNU.ReceiverPath);
         // borrow a reference to the sale
         let saleCollection = signer.borrow<&AvatarArtMarketplace.SaleCollection>(from: AvatarArtMarketplace.SaleCollectionStoragePath)
             ?? panic("Could not borrow from sale in storage")
@@ -25,7 +26,7 @@ transaction(tokenReceiverPath: PublicPath, nftID: UInt64, price: UFix64, payment
         let nft <- nftCollection.withdraw(withdrawID: nftID) as! @AvatarArtNFT.NFT
         
         // put the moment up for sale
-        saleCollection.listForSale(nft: <- nft, price: price, paymentType: paymentType, receiver: ownerCapability)
+        saleCollection.listForSale(nft: <- nft, price: price, paymentType: Type<@BNU.Vault>(), receiver: ownerCapability)
         
     }
 }

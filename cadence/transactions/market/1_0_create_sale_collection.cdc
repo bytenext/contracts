@@ -1,4 +1,4 @@
-import AvatarArtMarketplace from "../../contracts/AvatarArtMarketPlace.cdc"
+import AvatarArtMarketplace from "../../contracts/AvatarArtMarketplace.cdc"
 import FungibleToken from "../../contracts/FungibleToken.cdc"
 import AvatarArtNFT from "../../contracts/AvatarArtNFT.cdc";
 

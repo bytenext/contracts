@@ -1,5 +1,5 @@
 import FungibleToken from "../../contracts/FungibleToken.cdc"
-import AvatarArtMarketplace from "../../contracts/AvatarArtMarketPlace.cdc"
+import AvatarArtMarketplace from "../../contracts/AvatarArtMarketplace.cdc"
 import AvatarArtNFT from "../../contracts/AvatarArtNFT.cdc";
 
 transaction(tokenID: UInt64) {

@@ -1,7 +1,7 @@
 
 import FungibleToken from "../../contracts/FungibleToken.cdc"
 import NonFungibleToken from "../../contracts/NonFungibleToken.cdc"
-import AvatarArtMarketplace from "../../contracts/AvatarArtMarketPlace.cdc"
+import AvatarArtMarketplace from "../../contracts/AvatarArtMarketplace.cdc"
 import AvatarArtNFT from "../../contracts/AvatarArtNFT.cdc";
 import BNU from "../../contracts/BNU.cdc";
 
@@ -20,7 +20,7 @@ transaction(sellerAddress: Address, tokenID: UInt64, purchaseAmount: UFix64) {
         )
 
         // borrow a reference to the signer's collection
-        let receiver = signer.getCapability<&AvatarArtNFT.Collection{NonFungibleToken.Receiver}>(AvatarArtNFT.CollectionPublicPath)
+        let receiver = signer.getCapability<&AvatarArtNFT.Collection{NonFungibleToken.CollectionPublic}>(AvatarArtNFT.CollectionPublicPath)
         
         // borrow a reference to the signer's fungible token Vault
         let provider = signer.borrow<&BNU.Vault{FungibleToken.Provider}>(from: BNU.StorageVaultPath)!

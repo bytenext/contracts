@@ -4,7 +4,7 @@ import BNU from "../../contracts/BNU.cdc";
 import FungibleToken from "../../contracts/FungibleToken.cdc";
 
 transaction(nftID: UInt64, startTime: UFix64, endTime: UFix64, startPrice: UFix64) {
-  prepare(signer: AuthAccount, ) {
+  prepare(signer: AuthAccount) {
     let store = signer.borrow<&AvatarArtAuction.AuctionStore>(from: AvatarArtAuction.AuctionStoreStoragePath)
             ?? panic("Please setup store first")
 

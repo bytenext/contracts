@@ -7,6 +7,5 @@ transaction(auctionID: UInt64) {
     let store = signer.borrow<&AvatarArtAuction.AuctionStore>(from: AvatarArtAuction.AuctionStoreStoragePath)
             ?? panic("Please setup store first");
     store.settleAuction(auctionID: auctionID);
-    store.cleanUp(auctionID: auctionID);
   }
 }

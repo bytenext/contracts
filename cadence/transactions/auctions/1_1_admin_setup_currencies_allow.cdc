@@ -2,7 +2,6 @@ import AvatarArtTransactionInfo from "../../contracts/AvatarArtTransactionInfo.c
 import BNU from "../../contracts/BNU.cdc";
 import FUSD from "../../contracts/FUSD.cdc";
 import FlowToken from "../../contracts/FlowToken.cdc";
-import AvatarArtTransactionInfo from "../../contracts/AvatarArtTransactionInfo.cdc";
 
 transaction() {
   prepare(signer: AuthAccount) {

@@ -1,0 +1,43 @@
+{
+  "emulators": {
+    "default": {
+      "port": 3569,
+      "serviceAccount": "emulator-account"
+    }
+  },
+  "contracts": {
+    "FungibleToken": {
+      "source": "./cadences/FungileToken.cdc",
+      "aliases": {
+        "mainnet": "0xf233dcee88fe0abe",
+        "testnet": "0x9a0766d93b6608b7",
+        "emulator": "0xee82856bf20e2aa6"
+      }
+    },
+    "FlowToken": {
+      "source": "./cadences/FlowToken.cdc",
+      "aliases": {
+        "mainnet": "0x1654653399040a61",
+        "testnet": "0x7e60df042a9c0868",
+        "emulator": "0x0ae53cb6e3f42a79"
+      }
+    },
+    "FUSD": {
+      "source": "./cadences/FUSD.cdc",
+      "aliases": {
+        "mainnet": "0x3c5959b568896393",
+        "testnet": "0xe223d8a629e49c68"
+      }
+    }
+  },
+  "networks": {
+    "emulator": "127.0.0.1:3569",
+    "mainnet": "access.mainnet.nodes.onflow.org:9000",
+    "testnet": "access.devnet.nodes.onflow.org:9000"
+  },
+  "accounts": {
+    "emulator-account": {
+    }
+  },
+  "deployments": {}
+}
