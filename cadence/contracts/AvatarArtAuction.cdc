@@ -3,6 +3,7 @@ import NonFungibleToken from "./NonFungibleToken.cdc";
 import AvatarArtNFT from "./AvatarArtNFT.cdc";
 import AvatarArtTransactionInfo from "./AvatarArtTransactionInfo.cdc";
 
+// An fork of Versus Auction
 pub contract AvatarArtAuction {
   pub var totalAuctions: UInt64;
 
@@ -514,8 +515,6 @@ pub contract AvatarArtAuction {
   pub resource AuctionStore: AuctionStorePublic, AuctionStoreManager {
     access(self) let auctions: @{UInt64: AuctionItem};
 
-    //this method is used to create a standalone auction that is not part of a collection
-    //we use this to create the unique part of the Versus contract
     pub fun createStandaloneAuction(
         token: @AvatarArtNFT.NFT, 
         bidVault: @FungibleToken.Vault,

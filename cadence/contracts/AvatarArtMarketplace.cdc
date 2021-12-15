@@ -11,16 +11,16 @@ pub contract AvatarArtMarketplace {
     access(self) var feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>?;
     access(self) var feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>?;
 
-    // emitted when a NFT is listed for sale
+    // emitted when an Art is listed for sale
     pub event TokenListed(nftID: UInt64, price: UFix64, seller: Address?, paymentType: Type)
 
-    // emitted when the price of a listed moment has changed
+    // emitted when the price of a listed art has changed
     pub event TokenPriceChanged(nftID: UInt64, newPrice: UFix64, seller: Address?)
 
     // emitted when a token is purchased from the market
     pub event TokenPurchased(nftID: UInt64, price: UFix64, seller: Address?, buyer: Address)
 
-    // emitted when a moment has been withdrawn from the sale
+    // emitted when a token has been withdrawn from the sale
     pub event TokenWithdrawn(nftID: UInt64, owner: Address?)
 
     // emitted when a token purchased from market and a small fee are charged
