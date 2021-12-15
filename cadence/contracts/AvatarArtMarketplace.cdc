@@ -11,7 +11,7 @@ pub contract AvatarArtMarketplace {
     access(self) var feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>?;
     access(self) var feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>?;
 
-    // emitted when a TopShot moment is listed for sale
+    // emitted when a NFT is listed for sale
     pub event TokenListed(nftID: UInt64, price: UFix64, seller: Address?, paymentType: Type)
 
     // emitted when the price of a listed moment has changed
