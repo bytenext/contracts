@@ -3,7 +3,7 @@ import NonFungibleToken from "./NonFungibleToken.cdc";
 import AvatarArtNFT from "./AvatarArtNFT.cdc";
 import AvatarArtTransactionInfo from "./AvatarArtTransactionInfo.cdc";
 
-// An fork of Versus Auction
+// An fork of Versus Auction with some features addiontional
 pub contract AvatarArtAuction {
   pub var totalAuctions: UInt64;
 
@@ -653,4 +653,3 @@ pub contract AvatarArtAuction {
     self.account.save(<- create Administrator(), to: self.AdminStoragePath);
   }
 }
- 
