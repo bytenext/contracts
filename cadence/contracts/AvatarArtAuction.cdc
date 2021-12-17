@@ -651,9 +651,9 @@ pub contract AvatarArtAuction {
     self.feeReference = nil;
 
     // TODO: Remove suffix
-    self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore08;
-    self.AuctionStorePublicPath = /public/avatarArtAuctionStore08;
-    self.AdminStoragePath = /storage/avatarArtAuctionAdmin08;
+    self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore;
+    self.AuctionStorePublicPath = /public/avatarArtAuctionStore;
+    self.AdminStoragePath = /storage/avatarArtAuctionAdmin;
 
     self.account.save(<- create Administrator(), to: self.AdminStoragePath);
   }

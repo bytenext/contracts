@@ -69,10 +69,10 @@ pub contract BNU: FungibleToken {
     }
 
     init() {
-        self.AdminStoragePath = /storage/bnuAdmin08
-        self.ReceiverPath = /public/bnuReceiver08
-        self.StorageVaultPath = /storage/bnuVault08
-        self.BalancePublicPath = /public/bnuBalance08
+        self.AdminStoragePath = /storage/bnuAdmin
+        self.ReceiverPath = /public/bnuReceiver
+        self.StorageVaultPath = /storage/bnuVault
+        self.BalancePublicPath = /public/bnuBalance
         self.totalSupply = 0.0
 
         let admin <- create Administrator()

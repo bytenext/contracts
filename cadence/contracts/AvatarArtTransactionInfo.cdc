@@ -288,11 +288,11 @@ pub contract AvatarArtTransactionInfo {
     init(){
         self.acceptCurrencies = []
         self.nftInfo = {}
-        self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo08
-        self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo08
+        self.FeeInfoStoragePath = /storage/avatarArtTransactionInfoFeeInfo
+        self.FeeInfoPublicPath = /public/avatarArtTransactionInfoFeeInfo
 
-        self.TransactionAddressStoragePath = /storage/avatarArtTransactionInfoRecepientAddress08
-        self.TransactionAddressPublicPath = /public/avatarArtTransactionInfoRecepientAddress08
+        self.TransactionAddressStoragePath = /storage/avatarArtTransactionInfoRecepientAddress
+        self.TransactionAddressPublicPath = /public/avatarArtTransactionInfoRecepientAddress
 
         let feeInfo <- create FeeInfo()
         self.account.save(<- feeInfo, to: self.FeeInfoStoragePath)
@@ -308,7 +308,7 @@ pub contract AvatarArtTransactionInfo {
             AvatarArtTransactionInfo.TransactionAddressPublicPath,
             target: AvatarArtTransactionInfo.TransactionAddressStoragePath)
 
-        self.AdminStoragePath = /storage/avatarArtTransactionInfoAdmin08
+        self.AdminStoragePath = /storage/avatarArtTransactionInfoAdmin
         self.account.save(<- create Administrator(), to: self.AdminStoragePath)
     }
 }

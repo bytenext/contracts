@@ -267,8 +267,8 @@ pub contract ByteNextStaking {
     self.accTokenPerShare = 0.0;
 
     // TODO: REMOVE SUFFIX WHEN MAINNET
-    self.AdminStoragePath = /storage/bnuStakingAdmin002
-    self.StakingProxyStoragePath = /storage/bnuStakingProxy002
+    self.AdminStoragePath = /storage/bnuStakingAdmin
+    self.StakingProxyStoragePath = /storage/bnuStakingProxy
 
     let admin <- create Administrator()
     self.account.save(<-admin, to: self.AdminStoragePath)
