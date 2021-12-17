@@ -11,16 +11,16 @@ pub contract AvatarArtMarketplace {
     access(self) var feeReference: Capability<&{AvatarArtTransactionInfo.PublicFeeInfo}>?;
     access(self) var feeRecepientReference: Capability<&{AvatarArtTransactionInfo.PublicTransactionAddress}>?;
 
-    // emitted when an Art is listed for sale
+    // emitted NFT is listed for sale
     pub event TokenListed(nftID: UInt64, price: UFix64, seller: Address?, paymentType: Type)
 
-    // emitted when the price of a listed art has changed
+    // emitted when the price of a listed NFT has changed
     pub event TokenPriceChanged(nftID: UInt64, newPrice: UFix64, seller: Address?)
 
     // emitted when a token is purchased from the market
     pub event TokenPurchased(nftID: UInt64, price: UFix64, seller: Address?, buyer: Address)
 
-    // emitted when a token has been withdrawn from the sale
+    // emitted when NFT has been withdrawn from the sale
     pub event TokenWithdrawn(nftID: UInt64, owner: Address?)
 
     // emitted when a token purchased from market and a small fee are charged
@@ -108,52 +108,60 @@ pub contract AvatarArtMarketplace {
     pub resource SaleCollection: SalePublic {
         // Dictionary of the low low prices for each NFT by ID
         access(self) var listing: {UInt64: ListingDetails}
-        access(self) var ownerCollection: Capability<&AvatarArtNFT.Collection>
+        access(self) var nfts: @{UInt64: NonFungibleToken.NFT}
 
         // The fungible token vault of the owner of this sale.
         // When someone buys a token, this will be used to deposit
         // tokens into the owner's account.
 
-        init (ownerCollection: Capability<&AvatarArtNFT.Collection>) {
-            pre {
-                ownerCollection.check():
-                    "Invalid owner's collection capability"
-            }
+        init () {
             self.listing = {}
-            self.ownerCollection  = ownerCollection
+            self.nfts <- {}
+        }
+
+        destroy() {
+            destroy self.nfts
         }
 
         // listForSale
         // listForSale lists NFT(s) for sale
         //
-        pub fun listForSale(nftID: UInt64, price: UFix64, paymentType: Type,
+        pub fun listForSale(nft: @AvatarArtNFT.NFT, price: UFix64, paymentType: Type,
                 receiver: Capability<&{FungibleToken.Receiver}>) {
             pre {
-                self.ownerCollection.borrow()!.borrowAvatarArtNFT(id: nftID) != nil:
-                    "NFT does not exist in your collection"
                 price > 0.0: "Cannot list a NFT for 0.0"
                 AvatarArtTransactionInfo.isCurrencyAccepted(type: paymentType):
                     "Payment type is not allow"
-                receiver.check(): "can not borrow receiver"
             }
 
+            // Validate the receiver
+            receiver.borrow() ?? panic("can not borrow receiver")
+
+            let tokenID = nft.id
+
+            let old <- self.nfts[tokenID] <- nft 
+            assert(old == nil, message: "Should never panic this")
+            destroy old
 
             // Set sale price
-            self.listing[nftID] = ListingDetails(salePaymentVaultType: paymentType, salePrice: price, receiver: receiver)
+            self.listing[tokenID] = ListingDetails(salePaymentVaultType: paymentType, salePrice: price, receiver: receiver)
 
-            emit TokenListed(nftID: nftID, price: price, seller: self.owner?.address, paymentType: paymentType)
+            emit TokenListed(nftID: tokenID, price: price, seller: self.owner?.address, paymentType: paymentType)
         }
 
         // unlistSale
         // simply unlists the NFT from the SaleCollection
         // so it is no longer for sale
         //
-        pub fun unlistSale(tokenID: UInt64) {
+        pub fun unlistSale(tokenID: UInt64): @NonFungibleToken.NFT {
             pre {
                 self.listing.containsKey(tokenID): "No token matching this ID for sale!"
+                self.nfts.containsKey(tokenID): "No token matching this ID for sale!"
             }
             self.listing.remove(key: tokenID)
             emit TokenWithdrawn(nftID: tokenID, owner: self.owner?.address)
+
+            return <- self.nfts.remove(key: tokenID)!
         }
 
         access(self) fun cutFee(vault: &FungibleToken.Vault, salePrice: UFix64, artId: UInt64,
@@ -222,12 +230,15 @@ pub contract AvatarArtMarketplace {
             }
 
             // Author
-            if fee.author != nil && fee.author > 0.0 && feeRecepient.author != nil
-                && feeRecepient.author!.check() {
-                let fee = salePrice * fee.author / 100.0;
-                let feeVault <- vault.withdraw(amount: fee);
-                feeRecepient.author!.borrow()!.deposit(from: <- feeVault);
-                cutFee.author = fee;
+            if let info = AvatarArtTransactionInfo.getNFTInfo(tokenID: artId) {
+                let cap = info.author[vault.getType().identifier]
+
+                if info.authorFee != nil && info.authorFee! > 0.0 && cap != nil && cap!.check()  {
+                    let fee = salePrice * info.authorFee! / 100.0;
+                    let feeVault <- vault.withdraw(amount: fee);
+                    cap!.borrow()!.deposit(from: <- feeVault);
+                    cutFee.author = fee;
+                }
             }
 
             emit CuttedFee(nftID: artId, seller: self.owner?.address, fee: cutFee, paymentType: paymentType);
@@ -241,6 +252,8 @@ pub contract AvatarArtMarketplace {
                 affiliateVaultCap: Capability<&{FungibleToken.Receiver}>?) {
             pre {
                 self.listing[tokenID] != nil:
+                    "No token matching this ID for sale!"           
+                self.nfts[tokenID] != nil:
                     "No token matching this ID for sale!"           
                 buyTokens.balance == self.listing[tokenID]!.salePrice:
                     "Not enough tokens to buy the NFT!"
@@ -258,7 +271,7 @@ pub contract AvatarArtMarketplace {
             )
 
             let vaultRef = details.receiver.borrow()
-                ?? panic("Could not borrow reference to seller token vault")
+                ?? panic("Could not borrow reference to owner token vault")
 
 
             self.cutFee(vault: &buyTokens as &FungibleToken.Vault, salePrice: price, artId: tokenID,
@@ -267,11 +280,15 @@ pub contract AvatarArtMarketplace {
             // deposit the user's tokens into the owners vault
             vaultRef.deposit(from: <-buyTokens)
 
+
             // remove the NFT dictionary 
-            let nft <- self.ownerCollection.borrow()!.withdraw(withdrawID: tokenID)
-            let receiver = receiverCap.borrow() ?? panic("Can not borrow a reference to buyer collection")
+            let nft <- self.nfts.remove(key: tokenID)!
+            let receiver = receiverCap.borrow() ?? panic("Can not borrow a reference to receiver collection")
 
             receiver.deposit(token: <- nft)
+
+            // Set first owner nft is false
+            AvatarArtTransactionInfo.setFirstOwner(tokenID: tokenID, false)
 
             emit TokenPurchased(nftID: tokenID, price: price, seller: self.owner?.address, buyer: receiverCap.address)
         }
@@ -306,7 +323,7 @@ pub contract AvatarArtMarketplace {
         }
 
         pub fun borrowNFT(tokenID: UInt64): &NonFungibleToken.NFT? {
-            return self.ownerCollection.borrow()!.borrowAvatarArtNFT(id: tokenID)
+            return &self.nfts[tokenID] as &NonFungibleToken.NFT
         } 
 
     }
@@ -314,8 +331,8 @@ pub contract AvatarArtMarketplace {
     // createSaleCollection
     // createCollection returns a new SaleCollection resource to the caller
     //
-    pub fun createSaleCollection(ownerCollection: Capability<&AvatarArtNFT.Collection>): @SaleCollection {
-        return <- create SaleCollection(ownerCollection: ownerCollection)
+    pub fun createSaleCollection(): @SaleCollection {
+        return <- create SaleCollection()
     }
 
     pub resource Administrator {
@@ -328,14 +345,13 @@ pub contract AvatarArtMarketplace {
 
     }
 
-
     init() {
         self.feeReference = nil
         self.feeRecepientReference = nil
 
-        self.AdminStoragePath = /storage/AvatarArtMarketplaceAdmin05
-        self.SaleCollectionStoragePath = /storage/AvatarArtMarketplaceSaleCollection05
-        self.SaleCollectionPublicPath = /public/AvatarArtMarketplaceSaleCollection05
+        self.AdminStoragePath = /storage/avatarArtMarketplaceAdmin08
+        self.SaleCollectionStoragePath = /storage/avatarArtMarketplaceSaleCollection08
+        self.SaleCollectionPublicPath = /public/avatarArtMarketplaceSaleCollection08
 
         self.account.save(<- create Administrator(), to: self.AdminStoragePath)
     }

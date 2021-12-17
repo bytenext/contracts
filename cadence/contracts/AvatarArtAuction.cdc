@@ -400,12 +400,14 @@ pub contract AvatarArtAuction {
         }
 
         // Author
-        if fee.author != nil && fee.author > 0.0 && feeRecepient.author != nil
-          &&  feeRecepient.author!.check()  {
-            let fee = self.lastPrice * fee.author / 100.0;
-            let feeVault <- self.bidVault.withdraw(amount: fee);
-            feeRecepient.author!.borrow()!.deposit(from: <- feeVault);
-            cutFee.author = fee;
+        if let info = AvatarArtTransactionInfo.getNFTInfo(tokenID: nftID) {
+          let cap = info.author[self.bidVault.getType().identifier]
+          if info.authorFee != nil && info.authorFee! > 0.0 && cap != nil && cap!.check()  {
+              let fee = self.lastPrice * info.authorFee! / 100.0;
+              let feeVault <- self.bidVault.withdraw(amount: fee);
+              cap!.borrow()!.deposit(from: <- feeVault);
+              cutFee.author = fee;
+          }
         }
 
         emit CuttedFee(storeID: self.storeID, auctionID: self.uuid, fee: cutFee);
@@ -430,6 +432,9 @@ pub contract AvatarArtAuction {
         self.settleFee(nftID: nftID);
         self.sendNFT(self.recipientCollectionCap!);
         self.sendBidTokens(self.ownerVaultCap);
+
+        // Set first owner nft is false
+        AvatarArtTransactionInfo.setFirstOwner(tokenID: nftID, false)
 
         self.auctionCompleted = true;
 
@@ -646,9 +651,9 @@ pub contract AvatarArtAuction {
     self.feeReference = nil;
 
     // TODO: Remove suffix
-    self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore04;
-    self.AuctionStorePublicPath = /public/avatarArtAuctionStore04;
-    self.AdminStoragePath = /storage/avatarArtAuctionAdmin04;
+    self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore08;
+    self.AuctionStorePublicPath = /public/avatarArtAuctionStore08;
+    self.AdminStoragePath = /storage/avatarArtAuctionAdmin08;
 
     self.account.save(<- create Administrator(), to: self.AdminStoragePath);
   }
