@@ -1,4 +1,4 @@
-import FungibleToken from "./FungibleToken.cdc"
+import FungibleToken from 0xf233dcee88fe0abe;
 
 pub contract AvatarArtTransactionInfo {
     access(self) var acceptCurrencies: [Type]
@@ -44,7 +44,6 @@ pub contract AvatarArtTransactionInfo {
         pub let contractor: UFix64
         pub let platform: UFix64
 
-        // initializer
         init (_affiliate: UFix64, _storing: UFix64, _insurance: UFix64, _contractor: UFix64, _platform: UFix64) {
             self.affiliate = _affiliate
             self.storing = _storing
@@ -102,7 +101,6 @@ pub contract AvatarArtTransactionInfo {
                 return self.defaultFees[0]
             }
 
-
             // For Physical NFT
             if nftInfo!.type == 1 {
                 if nftInfo!.isFirstOwner {
@@ -111,7 +109,6 @@ pub contract AvatarArtTransactionInfo {
 
                 return  self.defaultFees[2]
             }
-
 
             return nil
         }
@@ -149,7 +146,6 @@ pub contract AvatarArtTransactionInfo {
         pub let contractor: Capability<&{FungibleToken.Receiver}>?
         pub let platform: Capability<&{FungibleToken.Receiver}>?
 
-        // initializer
         init (_storing: Capability<&{FungibleToken.Receiver}>?, 
             _insurance: Capability<&{FungibleToken.Receiver}>?, 
             _contractor: Capability<&{FungibleToken.Receiver}>?, 
@@ -166,7 +162,7 @@ pub contract AvatarArtTransactionInfo {
     }
 
     pub resource TransactionAddress : PublicTransactionAddress{
-        //Store fee for each NFT
+        // Store fee for each NFT
         // map tokenID => { payTypeIdentifier => TransactionRecipientItem }
         pub var addresses: {UInt64: {String: TransactionRecipientItem}}
         pub var defaultAddresses:  {String: TransactionRecipientItem}
@@ -237,7 +233,6 @@ pub contract AvatarArtTransactionInfo {
             )
         }
 
-        // initializer
         init () {
             self.addresses = {}
             self.defaultAddresses = {}

@@ -1,7 +1,7 @@
-import FungibleToken from "./FungibleToken.cdc"
-import NonFungibleToken from "./NonFungibleToken.cdc"
-import AvatarArtNFT from "./AvatarArtNFT.cdc";
-import AvatarArtTransactionInfo from "./AvatarArtTransactionInfo.cdc";
+import FungibleToken from 0xf233dcee88fe0abe;
+import NonFungibleToken from 0x1d7e57aa55817448;
+import AvatarArtNFT from 0xae508a21ec3017f9;
+import AvatarArtTransactionInfo from 0xae508a21ec3017f9;
 
 pub contract AvatarArtMarketplace {
     pub let AdminStoragePath: StoragePath
@@ -36,7 +36,6 @@ pub contract AvatarArtMarketplace {
         pub var salePrice: UFix64
 
         pub let receiver: Capability<&{FungibleToken.Receiver}>
-
 
         init (
             salePaymentVaultType: Type,
@@ -180,8 +179,6 @@ pub contract AvatarArtMarketplace {
             let fee = feeOp!;
             let feeRecepient = feeRecepientOp!;
 
-
-
             let cutFee = CutFee();
 
             // Affiliate
@@ -307,8 +304,8 @@ pub contract AvatarArtMarketplace {
             emit TokenPriceChanged(nftID: id, newPrice: newPrice, seller: self.owner?.address);
         }
 
-        // getPrice
-        // getPrice returns the price of a specific NFT in the sale
+        // getDetails
+        // getDetails returns the details of a specific NFT in the sale
         // if it exists, otherwise nil
         //
         pub fun getDetails(tokenID: UInt64): ListingDetails? {

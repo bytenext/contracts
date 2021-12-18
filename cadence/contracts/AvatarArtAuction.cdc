@@ -1,7 +1,7 @@
-import FungibleToken from "./FungibleToken.cdc";
-import NonFungibleToken from "./NonFungibleToken.cdc";
-import AvatarArtNFT from "./AvatarArtNFT.cdc";
-import AvatarArtTransactionInfo from "./AvatarArtTransactionInfo.cdc";
+import FungibleToken from 0xf233dcee88fe0abe;
+import NonFungibleToken from 0x1d7e57aa55817448;
+import AvatarArtNFT from 0xae508a21ec3017f9;
+import AvatarArtTransactionInfo from 0xae508a21ec3017f9;
 
 // An fork of Versus Auction with some features addiontional
 pub contract AvatarArtAuction {
@@ -95,7 +95,6 @@ pub contract AvatarArtAuction {
         self.author = 0.0;
       }
   }
-
 
   pub resource interface AuctionPublic {
     pub fun timeRemaining() : Fix64;
@@ -495,8 +494,6 @@ pub contract AvatarArtAuction {
 
   }
 
-
-
   pub resource interface AuctionStorePublic {
     pub fun createStandaloneAuction(
         token: @AvatarArtNFT.NFT, 
@@ -650,7 +647,6 @@ pub contract AvatarArtAuction {
     self.feeRecepientReference = nil;
     self.feeReference = nil;
 
-    // TODO: Remove suffix
     self.AuctionStoreStoragePath = /storage/avatarArtAuctionStore;
     self.AuctionStorePublicPath = /public/avatarArtAuctionStore;
     self.AdminStoragePath = /storage/avatarArtAuctionAdmin;
