@@ -1,9 +1,9 @@
 import ByteNextOrderBook from "../../contracts/ByteNextOrderBook.cdc"
 import BNU from "../../contracts/BNU.cdc"
-import FlowToken from "../../contracts/FlowToken.cdc"
+import FUSD from "../../contracts/FUSD.cdc"
 import FungibleToken from "../../contracts/FungibleToken.cdc"
 
-transaction(pairId: UInt64, price: UFix64, requestQty: UInt64) {
+transaction(pairId: String, price: UFix64, requestQty: UFix64) {
   prepare(signer: AuthAccount) {
 
     // Setup Proxy
@@ -35,12 +35,14 @@ transaction(pairId: UInt64, price: UFix64, requestQty: UInt64) {
     let proxy = signer.borrow<&ByteNextOrderBook.ExchangeProxy>(from: ByteNextOrderBook.ProxyStoragePath)!
 
 
-    // For pair Flow -> BNU: Use Flow to buy BNU
-    let flowVaultRef = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
+    // For pair BNU -> FUSD: Use FUSD to buy BNU
+    let fusdVaultRef = signer.borrow<&FUSD.Vault>(from: /storage/fusdVault)
       ?? panic("Could not borrow reference to the owner's Vault!")
     
     let bnuReceiver = signer.getCapability<&BNU.Vault{FungibleToken.Receiver}>(BNU.ReceiverPath);
 
-    proxy.buy(pairId: pairId, vault: <- flowVaultRef.withdraw(amount: UFix64(requestQty) * price), price: price, requestQty: requestQty, receiver: bnuReceiver)
+    if let returnVault <- proxy.buy(pairId: pairId, vault: <- fusdVaultRef.withdraw(amount: requestQty * price), price: price, receiver: bnuReceiver) {
+      fusdVaultRef.deposit(from: <- returnVault)
+    }
   }
 }
