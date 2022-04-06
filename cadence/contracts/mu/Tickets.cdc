@@ -57,7 +57,7 @@ pub contract Tickets {
     pub event TicketBought(level: UInt8, buyer: Address, qty: UInt64, discount: UFix64)
     pub event WhitelistTimeChange(startAt: UFix64, endAt: UFix64)
     pub event TimeChange(startAt: UFix64, endAt: UFix64)
-    pub event SwapForNFT(ticketID: UInt64, level: UInt8, qty: UInt64, candidateID: UInt64)
+    pub event SwapForNFT(ticketID: UInt64, level: UInt8, candidateID: UInt64)
 
     pub resource Admin {
         pub fun setPrice(level: UInt8, price: UFix64) {
@@ -333,7 +333,7 @@ pub contract Tickets {
         )
 
         destroy ticket
-        emit SwapForNFT(ticketID: ticketID, level: level.rawValue, qty: 1, candidateID: candidateID)
+        emit SwapForNFT(ticketID: ticketID, level: level.rawValue, candidateID: candidateID)
     }
 
     pub fun getSaleCuts(): [SaleCut] {
