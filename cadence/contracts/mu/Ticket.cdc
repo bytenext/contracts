@@ -67,8 +67,9 @@ pub contract Ticket: NonFungibleToken {
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
-            let nft <- token as! @NFT
-            self.counts[nft.level] = self.counts[nft.level] ?? 0 - 1
+            let nft <- token as! @Ticket.NFT
+            log(self.counts[nft.level])
+
             emit Withdraw(id: nft.id, from: self.owner?.address)
 
             return <-nft
@@ -82,7 +83,7 @@ pub contract Ticket: NonFungibleToken {
             let id: UInt64 = token.id
 
             // add the new token to the dictionary which removes the old one
-            self.counts[token.level] = self.counts[token.level] ?? 0 + 1
+            self.counts[token.level] = (self.counts[token.level] ?? 0) + 1
             let oldToken <- self.ownedNFTs[id] <- token
 
             emit Deposit(id: id, to: self.owner?.address)

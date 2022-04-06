@@ -240,7 +240,7 @@ pub contract TicketsAuction {
                 TicketsAuction.total < 70: "Can not create more auction"
             }
             TicketsAuction.total = TicketsAuction.total + 1
-            let auction <- create Auction(id: TicketsAuction.total + 1)
+            let auction <- create Auction(id: TicketsAuction.total)
 
             let auctionID = auction.id
             let oldAuction <- TicketsAuction.auctions[auctionID] <- auction

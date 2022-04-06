@@ -15,7 +15,7 @@ pub contract VnMissSwap {
             case VnMiss.Level.Bronze:
                 return "Bronze"
 
-            case VnMiss.Level.Diamond:
+            case VnMiss.Level.Silver:
                 return "Silver"
 
             case VnMiss.Level.Diamond:

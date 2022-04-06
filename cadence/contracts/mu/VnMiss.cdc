@@ -7,7 +7,7 @@ pub contract VnMiss: NonFungibleToken {
     pub var totalSupply: UInt64
 
     pub event ContractInitialized()
-    pub event Minted(to: Address, tokenId: UInt64, name: String, description: String, thumbnail: String)
+    pub event Minted(to: Address, level: UInt8, tokenId: UInt64, candidateID: UInt64, name: String, description: String, thumbnail: String)
     pub event Withdraw(id: UInt64, from: Address?)
     pub event Deposit(id: UInt64, to: Address?)
 
@@ -92,7 +92,7 @@ pub contract VnMiss: NonFungibleToken {
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
 
-            let nft <- token as! @NFT
+            let nft <- token as! @VnMiss.NFT
 
             emit Withdraw(id: nft.id, from: self.owner?.address)
 
@@ -183,7 +183,7 @@ pub contract VnMiss: NonFungibleToken {
 
             VnMiss.totalSupply = VnMiss.totalSupply + UInt64(1)
 
-            emit Minted(to: recipient.owner!.address, tokenId: id, name: view.name, description: view.description, thumbnail: thumbnail)
+            emit Minted(to: recipient.owner!.address, level: level.rawValue, tokenId: id, candidateID: candidateID, name: view.name, description: view.description, thumbnail: thumbnail)
         }
     }
 

@@ -14,8 +14,8 @@ pub contract Tickets {
 
     access(self) let candidateDept: { UInt64: UFix64 }
     access(self) var minted: {UInt64: { Ticket.Level: UInt64 }}
+    access(self) let candidateFund: @FungibleToken.Vault
 
-    pub let candidateFund: @FungibleToken.Vault
     pub var candidateFundRate: UFix64
 
     pub let discountRate: UFix64
