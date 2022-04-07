@@ -80,7 +80,7 @@ pub contract TicketsAuction {
 
         destroy() {
             pre {
-                self.vault.balance != 0.0: "Can't destroy a bid with non-empty vault"
+                self.vault.balance == 0.0: "Can't destroy a bid with non-empty vault"
             }
 
             destroy self.vault
@@ -95,11 +95,19 @@ pub contract TicketsAuction {
             vault: @FungibleToken.Vault,
             ref: String?
         )
+        pub fun currentBidForUser(address: Address): UFix64
     }
 
     pub resource Auction: AuctionPublic {
         pub let id: UInt64
         access(contract) var bid: @Bid?
+
+        pub fun currentBidForUser(address: Address): UFix64 {
+            if self.bid?.bidder() == address {
+                return self.bid?.bidAmount()!
+            }
+            return 0.0
+        }
 
         pub fun placeBid(
             refund: Capability<&{FungibleToken.Receiver}>,
@@ -120,13 +128,25 @@ pub contract TicketsAuction {
 
         access(contract) fun complete() {
           pre {
-            self.bid != nil: "No bid. Instead, use cancel"
             getCurrentBlock().timestamp > TicketsAuction.endAt ?? 0.0: "Auction has not ended"
           }
 
+           if self.bid == nil {
+                 emit AuctionCompleted(
+                    auctionID: self.id,
+                    bidder: nil,
+                    lastPrice: nil,
+                    purchased: false
+                )
+
+                return 
+            }
+
+
+
           self.bid?.payout()
           emit AuctionCompleted(
-              auctionID: self.uuid,
+              auctionID: self.id,
               bidder: self.bid?.bidder(),
               lastPrice: self.bid?.price,
               purchased: true
@@ -260,22 +280,6 @@ pub contract TicketsAuction {
             return auctionID
         }
 
-        pub fun cancelAuction(auctionID: UInt64) {
-            let auction <- TicketsAuction.auctions.remove(key: auctionID)
-                      ?? panic("missing auction")
-
-            assert(auction.bid == nil, message: "Can't cancel auction with bids")
-
-            emit AuctionCompleted(
-                auctionID: auctionID,
-                bidder: nil,
-                lastPrice: nil,
-                purchased: false
-            )
-
-            destroy auction
-        }
-
         pub fun completeAuction(auctionID: UInt64) {
             let auction <- TicketsAuction.auctions.remove(key: auctionID)
                       ?? panic("missing auction")
@@ -283,6 +287,7 @@ pub contract TicketsAuction {
             auction.complete()
             destroy auction
         }
+       
     }
 
     pub fun isOpen(): Bool {

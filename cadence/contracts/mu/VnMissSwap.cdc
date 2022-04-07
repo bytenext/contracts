@@ -47,8 +47,10 @@ pub contract VnMissSwap {
         let levelInt = level.rawValue
         let targetId = target.id
         let candidateID = target.candidateID
-        let minted = self.additional[candidateID]!
-        minted[level] = minted[level] ?? 195 + 1
+        let minted = self.additional[candidateID] ?? {}
+        let id = (minted[level] ?? 195) + 1
+        minted[level] = id
+
         self.additional[candidateID] = minted
 
         let minter = self.account.borrow<&VnMiss.NFTMinter>(from: VnMiss.MinterStoragePath)
@@ -57,8 +59,8 @@ pub contract VnMissSwap {
         minter.mintNFT(
             recipient: receiver,
             candidateID: candidateID,
-            level: level,
-            name: c.buildName(level: self.levelAsString(level: levelInt), id: minted[level]!),
+            level: VnMiss.Level(levelInt)!,
+            name: c.buildName(level: self.levelAsString(level: levelInt), id: id),
             thumbnail: target.thumbnail
         )
         receiver.deposit(token: <- target)
