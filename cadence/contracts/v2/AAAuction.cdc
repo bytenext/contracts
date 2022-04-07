@@ -164,7 +164,7 @@ pub contract AAAuction {
 
         destroy() {
             pre {
-              self.vault.balance != 0.0: "Can't destroy a bid with non-empty vault"
+              self.vault.balance == 0.0: "Can't destroy a bid with non-empty vault"
             }
 
             destroy self.vault
