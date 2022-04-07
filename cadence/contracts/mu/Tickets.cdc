@@ -54,7 +54,7 @@ pub contract Tickets {
     pub event MaxQtyChange(level: UInt8, qty: UInt64)
     pub event PaymentCutChanged(cuts: [PaymentCut])
     pub event Payout(cuts: [PaymentCut])
-    pub event TicketBought(level: UInt8, buyer: Address, qty: UInt64, discount: UFix64)
+    pub event TicketBought(level: UInt8, buyer: Address, qty: UInt64, discount: UFix64, price: UFix64, ref: String?)
     pub event WhitelistTimeChange(startAt: UFix64, endAt: UFix64)
     pub event TimeChange(startAt: UFix64, endAt: UFix64)
     pub event SwapForNFT(ticketID: UInt64, level: UInt8, candidateID: UInt64)
@@ -117,17 +117,19 @@ pub contract Tickets {
         recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
         level: UInt8,
         qty: UInt64,
-        payment: @FungibleToken.Vault
+        payment: @FungibleToken.Vault,
+        ref: String?
     ) {
         let now = getCurrentBlock().timestamp
         assert(Tickets.ticketStartAt <= now && Tickets.ticketEndAt >= now, message: "Not open")
 
-        Tickets.buy(recipient: recipient, level: Ticket.Level(level)!, qty: qty, payment: <- payment, discountRate: 0.0)
+        Tickets.buy(recipient: recipient, level: Ticket.Level(level)!, qty: qty, payment: <- payment, discountRate: 0.0, ref: ref)
     }
 
     pub fun buyWhitelist(
         recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
-        payment: @FungibleToken.Vault
+        payment: @FungibleToken.Vault,
+        ref: String?
     ) {
         let now = getCurrentBlock().timestamp
         assert(Tickets.whitelistStartAt <= now && Tickets.whitelistEndAt >= now, message: "Not open")
@@ -140,7 +142,7 @@ pub contract Tickets {
             panic("You are not whitelisted")
         }
 
-        self.buy(recipient: recipient, level: Ticket.Level.One, qty: 1, payment: <- payment, discountRate: self.discountRate)
+        self.buy(recipient: recipient, level: Ticket.Level.One, qty: 1, payment: <- payment, discountRate: self.discountRate, ref: ref)
         Whitelist.markAsBought(address: buyer)
     }
     
@@ -184,7 +186,7 @@ pub contract Tickets {
         recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
         issuePrice: UFix64,
         level: Ticket.Level,
-        qty: UInt64
+        qty: UInt64,
     ) {
         var i = 0 as UInt64
 
@@ -194,6 +196,8 @@ pub contract Tickets {
             i = i + 1
             minter.mintNFT(recipient: receiver, issuePrice: issuePrice, level: level)
         }
+
+        self.boughtTickets[level] = (self.boughtTickets[level] ?? 0) + qty
     }
 
     access(self) fun buy(
@@ -201,7 +205,8 @@ pub contract Tickets {
         level: Ticket.Level,
         qty: UInt64,
         payment: @FungibleToken.Vault,
-        discountRate: UFix64
+        discountRate: UFix64,
+        ref: String?
     ) {
         pre {
             payment.isInstance(Type<@FlowToken.Vault>()): "Should use Flow as payment"
@@ -214,15 +219,17 @@ pub contract Tickets {
         let price = self.ticketPrices[level]! - self.ticketPrices[level]! * discountRate
         assert(price * UFix64(qty) == payment.balance, message: "Insufficient funds")
 
+        let amount = payment.balance
         self.payout(payment: <-payment)
         self.mintTicket(recipient: recipient, issuePrice: price, level: level, qty: qty)
 
-        emit TicketBought(level: level.rawValue, buyer: recipient.address, qty: qty, discount: discountRate)
+        emit TicketBought(level: level.rawValue, buyer: recipient.address, qty: qty, discount: discountRate, price: amount, ref: ref)
     }
 
     access(account) fun payAndRewardDiamond(
         recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
-        payment: @FungibleToken.Vault
+        payment: @FungibleToken.Vault,
+        ref: String?
     ) {
         pre {
             (self.boughtTickets[Ticket.Level.Three] ?? 0) + 1 <= (self.maxTickets[Ticket.Level.Three] ?? 0):
@@ -234,18 +241,18 @@ pub contract Tickets {
         self.payout(payment: <- payment)
         self.mintTicket(recipient: recipient, issuePrice: issuePrice, level: Ticket.Level.Three, qty: 1)
 
-        emit TicketBought(level: Ticket.Level.Three.rawValue, buyer: recipient.address, qty: 1, discount: 0.0)
+        emit TicketBought(level: Ticket.Level.Three.rawValue, buyer: recipient.address, qty: 1, discount: 0.0, price: issuePrice, ref: ref)
     }
 
-    access(self) fun mapToVnMissTicketLevel(level: Ticket.Level): VnMiss.Level {
+    access(self) fun mapToVnMissTicketLevel(level: UInt8): VnMiss.Level {
         switch level {
-            case Ticket.Level.One:
+            case Ticket.Level.One.rawValue:
                 return VnMiss.Level.Bronze
 
-            case Ticket.Level.Two:
+            case Ticket.Level.Two.rawValue:
                 return VnMiss.Level.Silver
 
-            case Ticket.Level.Three:
+            case Ticket.Level.Three.rawValue:
                 return VnMiss.Level.Diamond
         }
 
@@ -262,7 +269,7 @@ pub contract Tickets {
             return
         }
 
-        self.candidateDept[c.id] = self.candidateDept[c.id] ?? 0.0 + amount
+        self.candidateDept[c.id] = (self.candidateDept[c.id] ?? 0.0) + amount
     }
 
     access(self) fun canMint(candidateID: UInt64, level: Ticket.Level): Bool {
@@ -275,26 +282,26 @@ pub contract Tickets {
             case Ticket.Level.Two:
                 return minted < 4
 
-            case Ticket.Level.One:
+            case Ticket.Level.Three:
                 return minted < 1
         }
 
         return  false
     }
 
-    pub fun levelAsString(level: Ticket.Level): String {
+    pub fun levelAsString(level: UInt8): String {
         switch level {
-            case Ticket.Level.One:
+            case Ticket.Level.One.rawValue:
                 return "Bronze"
 
-            case Ticket.Level.Two:
+            case Ticket.Level.Two.rawValue:
                 return "Silver"
 
-            case Ticket.Level.Three:
+            case Ticket.Level.Three.rawValue:
                 return "Diamond"
         }
 
-        return  ""
+        panic("Invalid level")
     }
 
 
@@ -304,36 +311,41 @@ pub contract Tickets {
 
         self.minted[candidateID] = self.minted[candidateID] ?? {}
 
-        let level = ticket.level
+        let level = Ticket.Level(rawValue: ticket.level) ?? panic("Level invalid")
+        let levelInt = level.rawValue
         let ticketID = ticket.id
 
         assert(self.canMint(candidateID: candidateID, level: level), message: "Slot of this level are full")
 
         let minted = self.minted[candidateID]!
-        minted[level] = minted[level] ?? 0 + 1
+        let id = (minted[level] ?? 0) + 1
+        minted[level] = id
+
         self.minted[candidateID] = minted
+
 
         let minter = self.account.borrow<&VnMiss.NFTMinter>(from: VnMiss.MinterStoragePath)
                             ?? panic("Can not borrow")
 
         self.fundForCandidate(c: c, issuePrice: ticket.issuePrice) 
-        let levelStr = self.levelAsString(level: level)
+
+        let levelStr = self.levelAsString(level: levelInt)
+      
 
         let thumbnail = c.code.concat("/")
                             .concat(levelStr.toLower())
                             .concat("/")
-                            .concat(minted[level]!.toString())
-                                
+                            .concat(id.toString())
         minter.mintNFT(
             recipient: recipient,
             candidateID: candidateID,
-            level: self.mapToVnMissTicketLevel(level: level),
-            name: c.buildName(level: levelStr, id: minted[level]!),
+            level: self.mapToVnMissTicketLevel(level: levelInt),
+            name: c.buildName(level: levelStr, id: id),
             thumbnail: thumbnail
         )
 
         destroy ticket
-        emit SwapForNFT(ticketID: ticketID, level: level.rawValue, candidateID: candidateID)
+        emit SwapForNFT(ticketID: ticketID, level: levelInt, candidateID: candidateID)
     }
 
     pub fun getSaleCuts(): [SaleCut] {

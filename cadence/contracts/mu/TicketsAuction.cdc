@@ -2,7 +2,6 @@ import FungibleToken from "../core/FungibleToken.cdc"
 import NonFungibleToken from "../core/NonFungibleToken.cdc"
 import FlowToken from "../core/FlowToken.cdc"
 import Tickets from "./Tickets.cdc"
-import Ticket from "./Ticket.cdc"
 
 pub contract TicketsAuction {
     access(contract) let unclaimedBids: @{Address: [Bid]}
@@ -29,12 +28,14 @@ pub contract TicketsAuction {
         access(contract) var price: UFix64
         access(contract) let refund: Capability<&{FungibleToken.Receiver}>
         access(contract) let recipient: Capability<&{NonFungibleToken.CollectionPublic}>
+        access(contract) var ref: String?
 
         init(
             vault: @FungibleToken.Vault,
             price: UFix64,
             refund: Capability<&{FungibleToken.Receiver}>,
-            recipient: Capability<&{NonFungibleToken.CollectionPublic}>
+            recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
+            ref: String?
         ) {
             pre {
               refund.check(): "Refund vault invalid"
@@ -45,6 +46,7 @@ pub contract TicketsAuction {
             self.price = price
             self.refund = refund
             self.recipient = recipient
+            self.ref = ref
         }
 
         pub fun doRefund(): Bool {
@@ -58,13 +60,14 @@ pub contract TicketsAuction {
             return false
         }
 
-        pub fun doIncrease(from: @FungibleToken.Vault) {
+        pub fun doIncrease(from: @FungibleToken.Vault, ref: String?) {
             self.vault.deposit(from: <- from)
             self.price = self.vault.balance
+            self.ref = ref
         }
 
         pub fun payout() {
-            Tickets.payAndRewardDiamond(recipient: self.recipient, payment: <- self.vault.withdraw(amount: self.vault.balance))
+            Tickets.payAndRewardDiamond(recipient: self.recipient, payment: <- self.vault.withdraw(amount: self.vault.balance), ref: self.ref)
         }
 
         pub fun bidder(): Address {
@@ -90,6 +93,7 @@ pub contract TicketsAuction {
             refund: Capability<&{FungibleToken.Receiver}>,
             recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
             vault: @FungibleToken.Vault,
+            ref: String?
         )
     }
 
@@ -101,16 +105,17 @@ pub contract TicketsAuction {
             refund: Capability<&{FungibleToken.Receiver}>,
             recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
             vault: @FungibleToken.Vault,
+            ref: String?
         ) {
             pre {
                 refund.address == recipient.address: "Should use same"
             }
 
             if self.bid?.bidder() == refund.address {
-                return self.increaseBid(vault: <- vault)
+                return self.increaseBid(vault: <- vault, ref: ref)
             }
 
-            return self.createBid(refund: refund, recipient: recipient, vault: <- vault)
+            return self.createBid(refund: refund, recipient: recipient, vault: <- vault, ref: ref)
         }
 
         access(contract) fun complete() {
@@ -128,14 +133,14 @@ pub contract TicketsAuction {
           )
         }
 
-        access(self) fun increaseBid(vault: @FungibleToken.Vault) {
+        access(self) fun increaseBid(vault: @FungibleToken.Vault, ref: String?) {
             pre {
               self.bid != nil: "Invalid call"
               vault.balance >= TicketsAuction.increment
             }
 
             if let bid <- self.bid <- nil {
-                bid.doIncrease(from: <- vault)
+                bid.doIncrease(from: <- vault, ref: ref)
                 let old <- self.bid <- bid
                 destroy old
             } else {
@@ -154,7 +159,8 @@ pub contract TicketsAuction {
         access(self) fun createBid(
             refund: Capability<&{FungibleToken.Receiver}>,
             recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
-            vault: @FungibleToken.Vault
+            vault: @FungibleToken.Vault,
+            ref: String?
         ) {
             pre {
                 TicketsAuction.isOpen(): "Auction not open"
@@ -169,7 +175,8 @@ pub contract TicketsAuction {
               vault: <- vault,
               price: price,
               refund: refund,
-              recipient: recipient
+              recipient: recipient,
+              ref: ref
             )
 
             let bidder = refund.address

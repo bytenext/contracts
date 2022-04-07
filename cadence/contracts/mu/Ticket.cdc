@@ -22,7 +22,7 @@ pub contract Ticket: NonFungibleToken {
     pub resource NFT: NonFungibleToken.INFT {
         pub let id: UInt64
         pub let issuePrice: UFix64
-        pub let level: Level
+        pub let level: UInt8
 
         init(
             id: UInt64,
@@ -31,7 +31,7 @@ pub contract Ticket: NonFungibleToken {
         ) {
             self.id = id
             self.issuePrice = issuePrice
-            self.level = level
+            self.level = level.rawValue
         } 
 
         destroy() {
@@ -49,14 +49,14 @@ pub contract Ticket: NonFungibleToken {
                     "Cannot borrow Ticket reference: the ID of the returned reference is incorrect"
             }
         }
-        pub fun getCounts(): {Level: UInt64}
+        pub fun getCounts(): {UInt8: UInt64}
     }
 
     pub resource Collection: TicketCollectionPublic, NonFungibleToken.Provider, NonFungibleToken.Receiver, NonFungibleToken.CollectionPublic {
         // dictionary of NFT conforming tokens
         // NFT is a resource type with an `UInt64` ID field
         pub var ownedNFTs: @{UInt64: NonFungibleToken.NFT}
-        pub var counts: {Level: UInt64}
+        pub var counts: {UInt8: UInt64}
 
         init () {
             self.ownedNFTs <- {}
@@ -65,14 +65,13 @@ pub contract Ticket: NonFungibleToken {
 
         // withdraw removes an NFT from the collection and moves it to the caller
         pub fun withdraw(withdrawID: UInt64): @NonFungibleToken.NFT {
+            let level = self.borrowTicket(id: withdrawID)?.level ?? panic("Level missing")
+            self.counts[level] = self.counts[level]! - 1
+
             let token <- self.ownedNFTs.remove(key: withdrawID) ?? panic("missing NFT")
+            emit Withdraw(id: token.id, from: self.owner?.address)
 
-            let nft <- token as! @Ticket.NFT
-            log(self.counts[nft.level])
-
-            emit Withdraw(id: nft.id, from: self.owner?.address)
-
-            return <-nft
+            return <-token
         }
 
         // deposit takes a NFT and adds it to the collections dictionary
@@ -112,7 +111,7 @@ pub contract Ticket: NonFungibleToken {
             return nil
         }
 
-        pub fun getCounts(): {Level: UInt64} {
+        pub fun getCounts(): {UInt8: UInt64} {
             return  self.counts
         }
 
@@ -162,9 +161,9 @@ pub contract Ticket: NonFungibleToken {
         self.totalSupply = 0
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/BNMUTicketNFTCollection
-        self.CollectionPublicPath = /public/BNMUTicketNFTCollection
-        self.MinterStoragePath = /storage/BNMUTicketNFTMinter
+        self.CollectionStoragePath = /storage/BNMUTicketNFTCollection002
+        self.CollectionPublicPath = /public/BNMUTicketNFTCollection002
+        self.MinterStoragePath = /storage/BNMUTicketNFTMinter002
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()

@@ -4,21 +4,21 @@ import NonFungibleToken from "../core/NonFungibleToken.cdc"
 
 pub contract VnMissSwap {
     pub var endAt: UFix64?
-    pub let additional: { UInt64: { VnMiss.Level: UInt64 } }
+    access(self) let additional: { UInt64: { VnMiss.Level: UInt64 } }
 
     pub let AdminStoragePath: StoragePath
 
     pub event SwapForNFT(from: [UInt64], to: UInt64, recipient: Address, candidateID: UInt64)
 
-    pub fun levelAsString(level: VnMiss.Level): String {
+    pub fun levelAsString(level: UInt8): String {
         switch level {
-            case VnMiss.Level.Bronze:
+            case VnMiss.Level.Bronze.rawValue:
                 return "Bronze"
 
-            case VnMiss.Level.Silver:
+            case VnMiss.Level.Silver.rawValue:
                 return "Silver"
 
-            case VnMiss.Level.Diamond:
+            case VnMiss.Level.Diamond.rawValue:
                 return "Diamond"
         }
 
@@ -44,6 +44,7 @@ pub contract VnMissSwap {
             i = i + 1
         }
 
+        let levelInt = level.rawValue
         let targetId = target.id
         let candidateID = target.candidateID
         let minted = self.additional[candidateID]!
@@ -57,7 +58,7 @@ pub contract VnMissSwap {
             recipient: receiver,
             candidateID: candidateID,
             level: level,
-            name: c.buildName(level: self.levelAsString(level: level), id: minted[level]!),
+            name: c.buildName(level: self.levelAsString(level: levelInt), id: minted[level]!),
             thumbnail: target.thumbnail
         )
         receiver.deposit(token: <- target)

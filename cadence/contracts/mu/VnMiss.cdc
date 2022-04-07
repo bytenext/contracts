@@ -176,14 +176,14 @@ pub contract VnMiss: NonFungibleToken {
             )
 
             let id = newNFT.id
-            let view = newNFT.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display
-
             // deposit it in the recipient's account using their reference
             recipient.deposit(token: <-newNFT)
 
             VnMiss.totalSupply = VnMiss.totalSupply + UInt64(1)
 
-            emit Minted(to: recipient.owner!.address, level: level.rawValue, tokenId: id, candidateID: candidateID, name: view.name, description: view.description, thumbnail: thumbnail)
+            let c = VnMissCandidate.getCandidate(id: candidateID)!
+
+            emit Minted(to: recipient.owner!.address, level: level.rawValue, tokenId: id, candidateID: candidateID, name: name, description: c.description, thumbnail: (VnMiss.BaseURL ?? "").concat(thumbnail))
         }
     }
 
@@ -193,9 +193,9 @@ pub contract VnMiss: NonFungibleToken {
         self.BaseURL = nil
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/BNVnMissNFTCollection
-        self.CollectionPublicPath = /public/BNVnMissNFTCollection
-        self.MinterStoragePath = /storage/BNVnMissNFTMinter
+        self.CollectionStoragePath = /storage/BNVnMissNFTCollection003
+        self.CollectionPublicPath = /public/BNVnMissNFTCollection003
+        self.MinterStoragePath = /storage/BNVnMissNFTMinter003
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()

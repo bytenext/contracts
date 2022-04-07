@@ -32,9 +32,11 @@ pub contract VnMissCandidate {
         }
 
         pub fun buildName(level: String, id: UInt64): String {
-            return  self.name.concat(" - ")
+            return  self.name.concat(" ")
+                        .concat(self.code)
+                        .concat(" - ")
                         .concat(level)
-                        .concat(" - #")
+                        .concat("#")
                         .concat(id.toString())
         }
 
