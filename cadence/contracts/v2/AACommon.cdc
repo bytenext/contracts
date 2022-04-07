@@ -22,8 +22,6 @@ pub contract AACommon {
         pub let amount: UFix64
 
         init (type: String, recipient: Address, rate: UFix64, amount: UFix64) {
-          assert(rate != 0.0, message: "Rate should be other than 0")
-          
           self.type = type
           self.recipient = recipient
           self.rate = rate
