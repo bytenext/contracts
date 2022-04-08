@@ -14,7 +14,7 @@ pub contract VnMiss: NonFungibleToken {
     pub let CollectionStoragePath: StoragePath
     pub let CollectionPublicPath: PublicPath
     pub let MinterStoragePath: StoragePath
-    pub let BaseURL: String?
+    pub var BaseURL: String?
 
     pub enum Level: UInt8 {
         pub case Bronze
@@ -185,12 +185,16 @@ pub contract VnMiss: NonFungibleToken {
 
             emit Minted(to: recipient.owner!.address, level: level.rawValue, tokenId: id, candidateID: candidateID, name: name, description: c.description, thumbnail: (VnMiss.BaseURL ?? "").concat(thumbnail))
         }
+
+        pub fun setBaseUrl(url: String) {
+            VnMiss.BaseURL = url
+        }
     }
 
     init() {
         // Initialize the total supply
         self.totalSupply = 0
-        self.BaseURL = nil
+        self.BaseURL = "https://hhhv-statics.avatarart.io/nfts/"
 
         // Set the named paths
         self.CollectionStoragePath = /storage/BNVnMissNFTCollection003
