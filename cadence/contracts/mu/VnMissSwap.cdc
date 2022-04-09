@@ -34,24 +34,23 @@ pub contract VnMissSwap {
         let receiver = recipient.borrow() ?? panic("Collection broken")
 
         var i = 0
-        var level: VnMiss.Level = VnMiss.Level.Diamond
+        let level: UInt8 = target.level
         let from: [UInt64] = []
+
         while i < list.length {
             let ref = &list[i] as &VnMiss.NFT
             from.append(ref.id)
-            if ref.level.rawValue < level.rawValue {
-                level = ref.level
-            }
+            assert(level == ref.level, message: "All nft should use same tier")
 
             i = i + 1
         }
 
-        let levelInt = level.rawValue
+        let levelE = VnMiss.Level(level)!
         let targetId = target.id
         let candidateID = target.candidateID
         let minted = self.additional[candidateID] ?? {}
-        let id = (minted[level] ?? 195) + 1
-        minted[level] = id
+        let id = (minted[levelE] ?? 195) + 1
+        minted[levelE] = id
 
         self.additional[candidateID] = minted
 
@@ -61,8 +60,8 @@ pub contract VnMissSwap {
         minter.mintNFT(
             recipient: receiver,
             candidateID: candidateID,
-            level: VnMiss.Level(levelInt)!,
-            name: c.buildName(level: self.levelAsString(level: levelInt), id: id),
+            level: VnMiss.Level(level)!,
+            name: c.buildName(level: self.levelAsString(level: level), id: id),
             thumbnail: target.thumbnail
         )
         receiver.deposit(token: <- target)

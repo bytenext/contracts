@@ -110,6 +110,13 @@ pub contract Tickets {
             emit TimeChange(startAt: startAt, endAt: endAt)
         }
 
+        pub fun setTimeSwap(startAt: UFix64, endAt: UFix64) {
+            Tickets.swapStartAt = startAt
+            Tickets.swapEndAt = endAt
+
+            emit TimeChange(startAt: startAt, endAt: endAt)
+        }
+
         pub fun withdrawCandidateFunds(amount: UFix64): @FungibleToken.Vault {
             return <- Tickets.candidateFund.withdraw(amount: amount)
         }

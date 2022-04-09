@@ -25,7 +25,7 @@ pub contract VnMiss: NonFungibleToken {
     pub resource NFT: NonFungibleToken.INFT, MetadataViews.Resolver {
         pub let id: UInt64
         pub let candidateID: UInt64
-        pub let level: Level
+        pub let level: UInt8
         pub let name: String
         pub let thumbnail: String
 
@@ -38,7 +38,7 @@ pub contract VnMiss: NonFungibleToken {
         ) {
             self.id = id
             self.candidateID = candidateID
-            self.level = level
+            self.level = level.rawValue
             self.name = name
             self.thumbnail = thumbnail
         }

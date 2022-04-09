@@ -350,7 +350,7 @@ pub contract TicketsAuction {
         self.increment = 0.1
 
         self.FlowReceiverPath = /public/flowTokenReceiver
-        self.AdminStoragePath = /storage/BNMUTicketsAuctions
+        self.AdminStoragePath = /storage/BNMUTicketsAuction
         self.account.save(<- create Admin(), to: self.AdminStoragePath)
     }
 }
