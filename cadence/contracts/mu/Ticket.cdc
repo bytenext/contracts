@@ -161,9 +161,9 @@ pub contract Ticket: NonFungibleToken {
         self.totalSupply = 0
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/BNMUTicketNFTCollection002
-        self.CollectionPublicPath = /public/BNMUTicketNFTCollection002
-        self.MinterStoragePath = /storage/BNMUTicketNFTMinter002
+        self.CollectionStoragePath = /storage/BNMUTicketNFTCollection
+        self.CollectionPublicPath = /public/BNMUTicketNFTCollection
+        self.MinterStoragePath = /storage/BNMUTicketNFTMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()

@@ -40,6 +40,7 @@ pub contract TicketsAuction {
             pre {
               refund.check(): "Refund vault invalid"
               recipient.check(): "Recipient collection invalid"
+              vault.getType() == refund.borrow()!.getType(): "Should you same type of fund to return"
             }
 
             self.vault <- vault
@@ -286,6 +287,21 @@ pub contract TicketsAuction {
 
             auction.complete()
             destroy auction
+        }
+
+        pub fun refundUnclaimedBidForUser(address: Address) {
+            if let bids <- TicketsAuction.unclaimedBids.remove(key: address) {
+                var i = 0
+                while i < bids.length {
+                    let ref = &bids[i] as &TicketsAuction.Bid
+                    assert(ref.doRefund(), message: "Can't not refund")
+
+                    i = i + 1
+                }
+
+
+                destroy bids
+            }
         }
        
     }

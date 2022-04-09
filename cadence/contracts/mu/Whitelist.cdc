@@ -42,7 +42,7 @@ pub contract Whitelist {
         self.whitelist = {}
         self.bought = {}
 
-        self.AdminStoragePath = /storage/BNMUWhitelistAdmin001
+        self.AdminStoragePath = /storage/BNMUWhitelistAdmin
 
         self.account.save(<- create Admin(), to: self.AdminStoragePath)
     }

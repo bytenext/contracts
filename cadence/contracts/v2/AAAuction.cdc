@@ -10,6 +10,8 @@ import AAReferralManager from "./AAReferralManager.cdc"
 
 pub contract AAAuction {
     access(contract) let unclaimedBids: @{UInt64: [Bid]}
+
+    pub let AdminStoragePath: StoragePath
     pub let AAAuctionStoragePath: StoragePath
     pub let AAAuctionPublicPath: PublicPath
 
@@ -83,6 +85,7 @@ pub contract AAAuction {
             pre {
               recipient.check(): "NFT recipient invalid"
               refund.check(): "Refund vault invalid"
+              vault.getType() == recipient.borrow()!.getType(): "Should you same type of fund to return"
             }
 
             self.recipient = recipient
@@ -227,6 +230,12 @@ pub contract AAAuction {
           vault: @FungibleToken.Vault,
           affiliate: Address?
         ) {
+            pre {
+              refund.check(): "Refund broken"
+              recipient.check(): "Refund broken"
+              refund.borrow()!.getType() == vault.getType(): "Vault and refund should same type"
+            }
+
             if self.bid?.bidder() == refund.address {
                 assert(self.bid?.recipient?.address == recipient.address, message: "New bid should use same recipient from previous")
 
@@ -500,6 +509,24 @@ pub contract AAAuction {
         }
     }
 
+    pub resource Admin {
+        pub fun refundUnclaimedBidForUser(storeUUID: UInt64) {
+            if let bids <- AAAuction.unclaimedBids.remove(key: storeUUID) {
+                var i = 0
+
+                while i < bids.length {
+                    let ref = &bids[i] as &AAAuction.Bid
+                    assert(ref.doRefund(), message: "Can't not refund")
+
+                    i = i + 1
+                }
+
+
+                destroy bids
+            }
+        }
+    }
+
     pub fun createAuctionStore(): @AuctionStore {
         return <-create AuctionStore()
     }
@@ -521,10 +548,14 @@ pub contract AAAuction {
         return self.unclaimedBids.keys
     }
 
+
     init() {
       self.AAAuctionPublicPath = /public/AAAuction
       self.AAAuctionStoragePath = /storage/AAAuction
       self.unclaimedBids <- {}
+
+      self.AdminStoragePath = /storage/AAAuctionAdmin
+      self.account.save(<- create Admin(), to: self.AdminStoragePath)
     }
 
 }

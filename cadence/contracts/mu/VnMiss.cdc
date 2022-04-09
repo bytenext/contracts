@@ -197,9 +197,9 @@ pub contract VnMiss: NonFungibleToken {
         self.BaseURL = "https://hhhv-statics.avatarart.io/nfts/"
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/BNVnMissNFTCollection003
-        self.CollectionPublicPath = /public/BNVnMissNFTCollection003
-        self.MinterStoragePath = /storage/BNVnMissNFTMinter003
+        self.CollectionStoragePath = /storage/BNVnMissNFTCollection
+        self.CollectionPublicPath = /public/BNVnMissNFTCollection
+        self.MinterStoragePath = /storage/BNVnMissNFTMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
