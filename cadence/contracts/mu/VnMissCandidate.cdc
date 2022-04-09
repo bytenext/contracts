@@ -56,7 +56,6 @@ pub contract VnMissCandidate {
         ) {
             pre {
                 VnMissCandidate.listCandidate.length < VnMissCandidate.MaxCandidate: "Exceed maximum"
-                VnMissCandidate.listCandidate[id] == nil: "Candidate already exist"
             }
             
             VnMissCandidate.listCandidate[id] = Candidate(id: id, name: name, code: code, description: description, fundAddress: fundAddress, properties: properties)

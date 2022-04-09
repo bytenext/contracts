@@ -3,7 +3,8 @@ import VnMissCandidate from "./VnMissCandidate.cdc"
 import NonFungibleToken from "../core/NonFungibleToken.cdc"
 
 pub contract VnMissSwap {
-    pub var endAt: UFix64?
+    pub var startAt: UFix64
+    pub var endAt: UFix64
     access(self) let additional: { UInt64: { VnMiss.Level: UInt64 } }
 
     pub let AdminStoragePath: StoragePath
@@ -26,7 +27,8 @@ pub contract VnMissSwap {
     }
 
     pub fun swapNFTForNFT(list: @[VnMiss.NFT; 5], target: @VnMiss.NFT, recipient: Capability<&{NonFungibleToken.CollectionPublic}>) {
-        assert(self.endAt == nil || self.endAt! <= getCurrentBlock().timestamp, message: "Not open")
+        let now = getCurrentBlock().timestamp
+        assert(self.startAt <= now && self.endAt >= now, message: "Not open")
         assert(list.length == 5, message: "Should input 5 nft")
 
         let receiver = recipient.borrow() ?? panic("Collection broken")
@@ -71,13 +73,15 @@ pub contract VnMissSwap {
     }
 
     pub resource Admin {
-        pub fun setEndAt(endAt: UFix64) {
+        pub fun setTime(startAt: UFix64, endAt: UFix64) {
+            VnMissSwap.startAt = startAt
             VnMissSwap.endAt = endAt
         }
     }
 
     init() {
-        self.endAt = nil
+        self.startAt = 1650121200.0
+        self.endAt = 1650898800.0
         self.additional = {}
 
         self.AdminStoragePath = /storage/BNMUVnMissSwap

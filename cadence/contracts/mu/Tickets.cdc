@@ -23,6 +23,8 @@ pub contract Tickets {
     pub var whitelistEndAt: UFix64
     pub var ticketStartAt: UFix64
     pub var ticketEndAt: UFix64
+    pub var swapStartAt: UFix64
+    pub var swapEndAt: UFix64
 
     pub let AdminStoragePath: StoragePath
     pub let FlowReceiverPath: PublicPath
@@ -294,6 +296,9 @@ pub contract Tickets {
     }
     
     pub fun swapForNFT(ticket: @Ticket.NFT, candidateID: UInt64, recipient: &{NonFungibleToken.CollectionPublic}) {
+        let now = getCurrentBlock().timestamp
+        assert(Tickets.swapStartAt <= now && Tickets.swapEndAt >= now, message: "Not open")
+
         let c = VnMissCandidate.getCandidate(id: candidateID) 
                     ?? panic("Candidate not exist")
 
@@ -380,10 +385,14 @@ pub contract Tickets {
         self.discountRate = 0.4
         self.candidateFundRate = 0.0
 
-        self.whitelistStartAt = 1649054950.0
-        self.whitelistEndAt = 1651055259.0
-        self.ticketStartAt = 1649054950.0
-        self.ticketEndAt = 1651055259.0
+        self.whitelistStartAt = 1649734200.0
+        self.whitelistEndAt = 1649739600.0
+
+        self.ticketStartAt = 1649764800.0
+        self.ticketEndAt = 1650718800.0
+
+        self.swapStartAt = 1650121200.0
+        self.swapEndAt = 1650718800.0
 
         self.ticketPrices = {
             Ticket.Level.One: 9.0,

@@ -156,6 +156,7 @@ pub contract TicketsAuction {
 
         access(self) fun increaseBid(vault: @FungibleToken.Vault, ref: String?) {
             pre {
+              TicketsAuction.isOpen(): "Auction not open"
               self.bid != nil: "Invalid call"
               vault.balance >= TicketsAuction.increment
             }
@@ -338,18 +339,18 @@ pub contract TicketsAuction {
     }
 
     init() {
-        self.startAt = 1649054950.0
-        self.endAt = 1651637492.0
-        self.startPrice = 20.0
+        self.startAt = 1649764800.0
+        self.endAt = 1650114000.0
+        self.startPrice = 300.0
         self.bidType = Type<@FlowToken.Vault>()
         self.unclaimedBids <- {}
 
         self.auctions <- {} 
         self.total = 0
-        self.increment = 0.5
+        self.increment = 0.1
 
         self.FlowReceiverPath = /public/flowTokenReceiver
-        self.AdminStoragePath = /storage/BNMUTicketsAuctions001
+        self.AdminStoragePath = /storage/BNMUTicketsAuctions
         self.account.save(<- create Admin(), to: self.AdminStoragePath)
     }
 }
