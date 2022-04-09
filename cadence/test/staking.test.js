@@ -33,8 +33,7 @@ describe('ByteNextStaking', () => {
   beforeEach(async () => {
     const basePath = path.resolve(__dirname, '../cadence');
     const port = 7001;
-    await init(basePath, { port });
-    emulator.setLogging(true);
+    await init(basePath, { port }); emulator.setLogging(true);
     return emulator.start(port, false);
   });
 

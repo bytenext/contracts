@@ -1,10 +1,4 @@
-import {
-  emulator,
-  getAccountAddress,
-  init,
-  shallPass,
-  shallRevert
-} from 'flow-js-testing';
+import { emulator, getAccountAddress, init, shallPass } from 'flow-js-testing';
 import path from 'path';
 import {
   createAuction,
@@ -23,10 +17,10 @@ import {
 } from '../src/avatar-art-nft';
 import { deployBnu, mintBnu, setupBnuOnAccount } from '../src/bnu';
 import { deployFUSD } from '../src/transaction-info';
-import { getCurrentTimestamp, sleep, tx, waitToTimeOver } from '../src/util';
+import { getCurrentTimestamp, tx, waitToTimeOver } from '../src/util';
 
 // We need to set timeout for a higher number, because some transactions might take up some time
-jest.setTimeout(500000);
+jest.setTimeout(5000000);
 
 describe('Avatar Art Auction', () => {
   beforeEach(async () => {
@@ -211,8 +205,8 @@ describe('Avatar Art Auction', () => {
     expect(error).not.toBeNull();
     expect(error).toContain('Invalid time to place');
 
-    // Increase block timestamp in emulator 2 seconds
-    await waitToTimeOver(startTime + 1);
+    // Wait to bid start
+    await waitToTimeOver(startTime);
 
     [, error] = await placeBid(buyer, seller, auctionID, startPrice - 20);
     expect(error).not.toBeNull();
@@ -220,15 +214,15 @@ describe('Avatar Art Auction', () => {
       'bid amount + (your current bid) must be larger or equal to the current price + minimum bid increment'
     );
 
-    // Increase block timestamp in emulator 4 seconds to end auction
-    waitToTimeOver(endTime + 1);
+    // Wait to bid end
+    await waitToTimeOver(endTime + 1);
 
     const now2 = await getCurrentTimestamp();
-    if (now2 > endTime) {
-      [, error] = await placeBid(buyer, seller, auctionID, startPrice);
-      expect(error).not.toBeNull();
-      expect(error).toContain('Invalid time to place');
-    }
+    expect(+now2).toBeGreaterThan(+endTime);
+
+    [, error] = await placeBid(buyer, seller, auctionID, startPrice);
+    expect(error).not.toBeNull();
+    expect(error).toContain('Invalid time to place');
   });
 
   it('shall will be return nft back to seller when no bids', async () => {
@@ -242,7 +236,7 @@ describe('Avatar Art Auction', () => {
     const now = await getCurrentTimestamp();
 
     const nftID = 1000;
-    const startTime = now;
+    const startTime = +now;
     const endTime = +now + 5;
     const startPrice = 3;
 
@@ -253,6 +247,7 @@ describe('Avatar Art Auction', () => {
 
     await waitToTimeOver(endTime + 1);
 
+    expect(data).not.toBeNull();
     const event = data.events.find(({ type }) =>
       type.includes('AvatarArtAuction.AuctionAvailable')
     );
@@ -280,7 +275,7 @@ describe('Avatar Art Auction', () => {
     const now = await getCurrentTimestamp();
 
     const nftID = 1000;
-    const startTime = now;
+    const startTime = +now;
     const endTime = +now + 20;
     const startPrice = 3;
 
@@ -299,11 +294,7 @@ describe('Avatar Art Auction', () => {
     await waitToTimeOver(endTime + 1);
 
     const now2 = await getCurrentTimestamp();
-    if (now2 <= endTime) {
-      console.warn('Auction not expired');
-      return;
-    }
-
+    expect(+now2).toBeGreaterThan(endTime);
     await shallPass(tx(settleAuction(seller, auctionID)));
 
     const nft = await getAvatarArt(buyer, nftID);

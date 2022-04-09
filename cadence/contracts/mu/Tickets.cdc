@@ -113,39 +113,6 @@ pub contract Tickets {
         }
     }
 
-    pub fun buyTickets(
-        recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
-        level: UInt8,
-        qty: UInt64,
-        payment: @FungibleToken.Vault,
-        ref: String?
-    ) {
-        let now = getCurrentBlock().timestamp
-        assert(Tickets.ticketStartAt <= now && Tickets.ticketEndAt >= now, message: "Not open")
-
-        Tickets.buy(recipient: recipient, level: Ticket.Level(level)!, qty: qty, payment: <- payment, discountRate: 0.0, ref: ref)
-    }
-
-    pub fun buyWhitelist(
-        recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
-        payment: @FungibleToken.Vault,
-        ref: String?
-    ) {
-        let now = getCurrentBlock().timestamp
-        assert(Tickets.whitelistStartAt <= now && Tickets.whitelistEndAt >= now, message: "Not open")
-
-        let buyer = recipient.address
-        assert(Whitelist.hasBought(address: buyer) == false, message: "Only buy 1 ticket discount")
-
-        let price = Tickets.ticketPrices[Ticket.Level.One]!
-        if Whitelist.whitelisted(address: buyer) == false {
-            panic("You are not whitelisted")
-        }
-
-        self.buy(recipient: recipient, level: Ticket.Level.One, qty: 1, payment: <- payment, discountRate: self.discountRate, ref: ref)
-        Whitelist.markAsBought(address: buyer)
-    }
-    
     access(self) fun payout(payment: @FungibleToken.Vault) {
         var residualReceiver: &{FungibleToken.Receiver}? = nil
         let total = payment.balance
@@ -211,7 +178,7 @@ pub contract Tickets {
         pre {
             payment.isInstance(Type<@FlowToken.Vault>()): "Should use Flow as payment"
             level.rawValue < Ticket.Level.Three.rawValue: "Can not bought level 3. Use auction"
-            qty > 0 && qty < 30: "Qty should be > 0 adn <= 30"
+            qty > 0 && qty <= 30: "Qty should be > 0 adn <= 30"
             (self.boughtTickets[level] ?? 0) + qty <= (self.maxTickets[level] ?? 0):
                 "Sold out ticket for this level"
         }
@@ -289,22 +256,43 @@ pub contract Tickets {
         return  false
     }
 
-    pub fun levelAsString(level: UInt8): String {
-        switch level {
-            case Ticket.Level.One.rawValue:
-                return "Bronze"
+    pub fun buyTickets(
+        recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
+        level: UInt8,
+        qty: UInt64,
+        payment: @FungibleToken.Vault,
+        ref: String?
+    ) {
+        let now = getCurrentBlock().timestamp
+        assert(Tickets.ticketStartAt <= now && Tickets.ticketEndAt >= now, message: "Not open")
 
-            case Ticket.Level.Two.rawValue:
-                return "Silver"
-
-            case Ticket.Level.Three.rawValue:
-                return "Diamond"
-        }
-
-        panic("Invalid level")
+        Tickets.buy(recipient: recipient, level: Ticket.Level(level)!, qty: qty, payment: <- payment, discountRate: 0.0, ref: ref)
     }
 
+    pub fun buyWhitelist(
+        recipient: Capability<&{NonFungibleToken.CollectionPublic}>,
+        payment: @FungibleToken.Vault,
+        ref: String?
+    ) {
+        let now = getCurrentBlock().timestamp
+        assert(Tickets.whitelistStartAt <= now && Tickets.whitelistEndAt >= now, message: "Not open")
 
+        let buyer = recipient.address
+        assert(Whitelist.hasBought(address: buyer) == false, message: "Only buy 1 ticket discount")
+
+        let price = Tickets.ticketPrices[Ticket.Level.One]!
+        if Whitelist.whitelisted(address: buyer) == false {
+            panic("You are not whitelisted")
+        }
+
+        self.buy(recipient: recipient, level: Ticket.Level.One, qty: 1, payment: <- payment, discountRate: self.discountRate, ref: ref)
+        Whitelist.markAsBought(address: buyer)
+    }
+
+    pub fun getCandidateFundBalance(): UFix64 {
+        return  self.candidateFund.balance
+    }
+    
     pub fun swapForNFT(ticket: @Ticket.NFT, candidateID: UInt64, recipient: &{NonFungibleToken.CollectionPublic}) {
         let c = VnMissCandidate.getCandidate(id: candidateID) 
                     ?? panic("Candidate not exist")
@@ -348,6 +336,21 @@ pub contract Tickets {
         emit SwapForNFT(ticketID: ticketID, level: levelInt, candidateID: candidateID)
     }
 
+    pub fun levelAsString(level: UInt8): String {
+        switch level {
+            case Ticket.Level.One.rawValue:
+                return "Bronze"
+
+            case Ticket.Level.Two.rawValue:
+                return "Silver"
+
+            case Ticket.Level.Three.rawValue:
+                return "Diamond"
+        }
+
+        panic("Invalid level")
+    }
+
     pub fun getSaleCuts(): [SaleCut] {
         return self.saleCuts
     }
@@ -364,19 +367,28 @@ pub contract Tickets {
         return self.candidateDept[id] ?? 0.0
     }
 
+    pub fun getMinted(id: UInt64, level: UInt8): UInt64 {
+        let m = self.minted[id] ?? {}
+        return m[Ticket.Level(level)!] ?? 0
+    }
+
+    pub fun getTicketPrice(level: UInt8): UFix64 {
+        return self.ticketPrices[Ticket.Level(level)!] ?? 0.0
+    }
+
     init() {
         self.discountRate = 0.4
         self.candidateFundRate = 0.0
 
         self.whitelistStartAt = 1649054950.0
-        self.whitelistEndAt = 1649055259.0
+        self.whitelistEndAt = 1651055259.0
         self.ticketStartAt = 1649054950.0
-        self.ticketEndAt = 1649055259.0
+        self.ticketEndAt = 1651055259.0
 
         self.ticketPrices = {
-            Ticket.Level.One: 50.0,
-            Ticket.Level.Two: 300.0,
-            Ticket.Level.Three: 2000.0
+            Ticket.Level.One: 9.0,
+            Ticket.Level.Two: 42.0,
+            Ticket.Level.Three: 300.0
         }
 
         self.maxTickets = {

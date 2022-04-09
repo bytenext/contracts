@@ -1,5 +1,7 @@
-import { executeScript, getAccountAddress } from 'flow-js-testing';
-import { mintBnu, setupBnuOnAccount } from './bnu';
+import { deployContract, executeScript, getAccountAddress, getContractCode } from "flow-js-testing";
+import { mintBnu, setupBnuOnAccount } from "./bnu";
+import * as fs from 'fs';
+import { resolve } from "path";
 
 const UFIX64_PRECISION = 8;
 
@@ -7,28 +9,28 @@ const UFIX64_PRECISION = 8;
 export const toUFix64 = (value) => value.toFixed(UFIX64_PRECISION);
 
 export function getAdminAddress() {
-  return getAccountAddress('admin');
+  return getAccountAddress("admin");
 }
 export const sansPrefix = (address) => {
   if (address == null) return null;
-  return address.replace(/^0x/, '');
+  return address.replace(/^0x/, "");
 };
 
 export const withPrefix = (address) => {
   if (address == null) return null;
-  return '0x' + sansPrefix(address);
+  return "0x" + sansPrefix(address);
 };
 
 export async function tx(fn) {
   let data, error;
-  if (typeof fn == 'function') {
+  if (typeof fn == "function") {
     [data, error] = await fn();
   } else {
     [data, error] = await fn;
   }
 
   if (error) {
-    throw new Error(error);
+    throw error;
   }
   return [data];
 }
@@ -62,8 +64,9 @@ export async function sleep(ms) {
 }
 
 export async function waitToTimeOver(unix) {
-  const addr = await getAccountAddress('some-one');
+  const addr = await getAccountAddress("some-one-else");
   await setupBnuOnAccount(addr);
+  await mintBnu(addr, 100);
 
   while (+(await getCurrentTimestamp()) < unix) {
     setImmediate(async () => {
@@ -71,4 +74,24 @@ export async function waitToTimeOver(unix) {
     });
     await sleep(100);
   }
+}
+
+export async function getCode(path) {
+  return fs.promises.readFile(resolve("cadence", "contracts", path), 'utf-8');
+}
+
+export async function deployNested({ path, name = '', ...o }) {
+ const code = await getContractCode({
+   name: path,
+   addressMap: o.addressMap || {}
+ });
+
+ delete o.addressMap
+
+  return deployContract({
+    ...o,
+    name: name || path.split("/").pop(),
+    code: code
+  });
+
 }
