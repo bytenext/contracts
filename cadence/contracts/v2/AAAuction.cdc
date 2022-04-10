@@ -85,7 +85,7 @@ pub contract AAAuction {
             pre {
               recipient.check(): "NFT recipient invalid"
               refund.check(): "Refund vault invalid"
-              vault.getType() == recipient.borrow()!.getType(): "Should you same type of fund to return"
+              vault.getType() == refund.borrow()!.getType(): "Should you same type of fund to return"
             }
 
             self.recipient = recipient
