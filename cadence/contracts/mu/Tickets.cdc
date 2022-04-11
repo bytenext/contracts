@@ -123,7 +123,6 @@ pub contract Tickets {
     }
 
     access(self) fun payout(payment: @FungibleToken.Vault) {
-        var residualReceiver: &{FungibleToken.Receiver}? = nil
         let total = payment.balance
         let payouts: [PaymentCut] = []
 
@@ -137,23 +136,17 @@ pub contract Tickets {
                 receiver.deposit(from: <-paymentCut)
 
                 payouts.append(PaymentCut(recipient: cut.recipient.address, rateOrAmount: amount))
-
-                if (residualReceiver == nil) {
-                    residualReceiver = receiver
-                }
             }
         }
-
-        assert(residualReceiver != nil, message: "No valid payment receivers")
 
         // At this point, if all recievers were active and availabile, then the payment Vault will have
         // zero tokens left, and this will functionally be a no-op that consumes the empty vault
 
         if payment.balance > 0.0 {
-            payouts.append(PaymentCut(recipient: residualReceiver?.owner?.address!, rateOrAmount: payment.balance))
+            payouts.append(PaymentCut(recipient: self.account.address, rateOrAmount: payment.balance))
         }
 
-        residualReceiver!.deposit(from: <-payment)
+        self.candidateFund.deposit(from: <-payment)
 
         emit Payout(cuts: payouts)
     }
@@ -392,19 +385,25 @@ pub contract Tickets {
         self.discountRate = 0.4
         self.candidateFundRate = 0.0
 
-        self.whitelistStartAt = 1649734200.0
-        self.whitelistEndAt = 1649739600.0
+        // Thu Apr 14 2022 03:30:00 GMT+0000
+        self.whitelistStartAt = 1649907000.0
+        // Thu Apr 14 2022 05:00:00 GMT+0000
+        self.whitelistEndAt = 1649912400.0
 
-        self.ticketStartAt = 1649764800.0
+        // Thu Apr 14 2022 12:00:00 GMT+0000
+        self.ticketStartAt = 1649937600.0
+        // Sat Apr 23 2022 13:00:00 GMT+0000
         self.ticketEndAt = 1650718800.0
 
+        // Sat Apr 16 2022 15:00:00 GMT+0000
         self.swapStartAt = 1650121200.0
+        // Sat Apr 23 2022 13:00:00 GMT+0000
         self.swapEndAt = 1650718800.0
 
         self.ticketPrices = {
-            Ticket.Level.One: 9.0,
-            Ticket.Level.Two: 42.0,
-            Ticket.Level.Three: 300.0
+            Ticket.Level.One: 8.3,
+            Ticket.Level.Two: 50.0,
+            Ticket.Level.Three: 333.3
         }
 
         self.maxTickets = {

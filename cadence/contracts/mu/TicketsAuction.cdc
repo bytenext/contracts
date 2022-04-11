@@ -339,9 +339,11 @@ pub contract TicketsAuction {
     }
 
     init() {
-        self.startAt = 1649764800.0
+        // Thu Apr 14 2022 12:00:00 GMT+0000
+        self.startAt = 1649937600.0
+        // Sat Apr 16 2022 13:00:00 GMT+0000
         self.endAt = 1650114000.0
-        self.startPrice = 300.0
+        self.startPrice = 333.3
         self.bidType = Type<@FlowToken.Vault>()
         self.unclaimedBids <- {}
 
@@ -350,7 +352,7 @@ pub contract TicketsAuction {
         self.increment = 0.1
 
         self.FlowReceiverPath = /public/flowTokenReceiver
-        self.AdminStoragePath = /storage/BNMUTicketsAuction
+        self.AdminStoragePath = /storage/BNMUTicketsAuctions
         self.account.save(<- create Admin(), to: self.AdminStoragePath)
     }
 }

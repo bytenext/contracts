@@ -130,16 +130,4 @@ pub contract MetadataViews {
         }
     }
 
-    pub struct Royalty {
-        pub let recipient: Address
-        pub let cut: UFix64
-
-        init(recepient: Address, cut: UFix64) {
-            pre {
-                cut <= 1.0 : "Cut value should be in valid range i.e [0,1]"
-            }
-            self.recipient = recepient
-            self.cut = cut
-        }
-    }
 }

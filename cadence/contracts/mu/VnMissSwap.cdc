@@ -10,6 +10,7 @@ pub contract VnMissSwap {
     pub let AdminStoragePath: StoragePath
 
     pub event SwapForNFT(from: [UInt64], to: UInt64, recipient: Address, candidateID: UInt64)
+    pub event SwapTimeChange(startAt: UFix64, endAt: UFix64)
 
     pub fun levelAsString(level: UInt8): String {
         switch level {
@@ -72,14 +73,21 @@ pub contract VnMissSwap {
     }
 
     pub resource Admin {
+        /**
+         * Admin will call this function on demand
+         */
         pub fun setTime(startAt: UFix64, endAt: UFix64) {
             VnMissSwap.startAt = startAt
             VnMissSwap.endAt = endAt
+
+            emit SwapTimeChange(startAt: startAt, endAt: endAt)
         }
     }
 
     init() {
+        // Sat Apr 16 2022 15:00:00 GMT+0000
         self.startAt = 1650121200.0
+        // Sat Apr 16 2022 16:00:00 GMT+0000
         self.endAt = 1650898800.0
         self.additional = {}
 
