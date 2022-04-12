@@ -46,11 +46,26 @@ pub contract VnMissSwap {
             i = i + 1
         }
 
+        let max = fun (level: UInt8): UInt64 {
+            switch (level) {
+                case VnMiss.Level.Bronze.rawValue:
+                    return 195 
+
+                case VnMiss.Level.Silver.rawValue:
+                    return 4
+
+                case VnMiss.Level.Diamond.rawValue:
+                    return 1
+            }
+
+            panic("Level invalid")
+        }
+
         let levelE = VnMiss.Level(level)!
         let targetId = target.id
         let candidateID = target.candidateID
         let minted = self.additional[candidateID] ?? {}
-        let id = (minted[levelE] ?? 195) + 1
+        let id = (minted[levelE] ?? max(level)) + 1
         minted[levelE] = id
 
         self.additional[candidateID] = minted
