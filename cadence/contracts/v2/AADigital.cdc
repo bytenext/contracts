@@ -1,5 +1,5 @@
 import NonFungibleToken from "../core/NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
+import MetadataViews from "../core/MetadataViews.cdc"
 
 pub contract AADigital: NonFungibleToken {
     pub var totalSupply: UInt64

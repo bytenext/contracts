@@ -1,6 +1,5 @@
-
+import MetadataViews from "../core/MetadataViews.cdc"
 import NonFungibleToken from "../core/NonFungibleToken.cdc"
-import MetadataViews from "./MetadataViews.cdc"
 import VnMissCandidate from "./VnMissCandidate.cdc"
 
 pub contract VnMiss: NonFungibleToken {
@@ -197,9 +196,9 @@ pub contract VnMiss: NonFungibleToken {
         self.BaseURL = "https://hhhv-statics.avatarart.io/nfts/"
 
         // Set the named paths
-        self.CollectionStoragePath = /storage/BNVnMissNFTCollection
-        self.CollectionPublicPath = /public/BNVnMissNFTCollection
-        self.MinterStoragePath = /storage/BNVnMissNFTMinter
+        self.CollectionStoragePath = /storage/BNVnMissNFTCollection006
+        self.CollectionPublicPath = /public/BNVnMissNFTCollection006
+        self.MinterStoragePath = /storage/BNVnMissNFTMinter006
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
