@@ -7,7 +7,6 @@ import AACurrencyManager from 0x39eeb4ee6f30fc3f
 import AAFeeManager from 0x39eeb4ee6f30fc3f
 import AAReferralManager from 0x39eeb4ee6f30fc3f
 import AACommon from 0x39eeb4ee6f30fc3f
-import AAPhysical from 0x39eeb4ee6f30fc3f
 
 // A wrapper of NFTStorefront
 pub contract AAExchange {
