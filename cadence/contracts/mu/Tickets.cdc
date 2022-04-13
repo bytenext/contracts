@@ -1,10 +1,10 @@
 import FlowToken from 0x1654653399040a61
 import FungibleToken from 0xf233dcee88fe0abe
 import NonFungibleToken from 0x1d7e57aa55817448
-import Whitelist from "./Whitelist.cdc"
-import VnMiss from "./VnMiss.cdc"
-import VnMissCandidate from "./VnMissCandidate.cdc"
-import Ticket from "./Ticket.cdc"
+import Whitelist from 0x7c11edb826692404
+import VnMiss from 0x7c11edb826692404
+import VnMissCandidate from 0x7c11edb826692404
+import Ticket from 0x7c11edb826692404
 
 pub contract Tickets {
     access(contract) let ticketPrices: {Ticket.Level: UFix64}

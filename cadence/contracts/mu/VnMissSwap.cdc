@@ -1,6 +1,6 @@
-import VnMiss from "./VnMiss.cdc"
-import VnMissCandidate from "./VnMissCandidate.cdc"
 import NonFungibleToken from 0x1d7e57aa55817448
+import VnMiss from 0x7c11edb826692404
+import VnMissCandidate from 0x7c11edb826692404
 
 pub contract VnMissSwap {
     pub var startAt: UFix64
