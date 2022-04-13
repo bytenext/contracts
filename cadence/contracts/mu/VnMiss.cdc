@@ -1,5 +1,5 @@
-import MetadataViews from "../core/MetadataViews.cdc"
-import NonFungibleToken from "../core/NonFungibleToken.cdc"
+import MetadataViews from 0x1d7e57aa55817448
+import NonFungibleToken from 0x1d7e57aa55817448
 import VnMissCandidate from "./VnMissCandidate.cdc"
 
 pub contract VnMiss: NonFungibleToken {

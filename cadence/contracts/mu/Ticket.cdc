@@ -1,4 +1,4 @@
-import NonFungibleToken from "../core/NonFungibleToken.cdc"
+import NonFungibleToken from 0xf233dcee88fe0abe
 
 pub contract Ticket: NonFungibleToken {
     pub var totalSupply: UInt64
