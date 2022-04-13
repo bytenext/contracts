@@ -1,5 +1,6 @@
 import MetadataViews from 0x1d7e57aa55817448
 import NonFungibleToken from 0x1d7e57aa55817448
+
 import VnMissCandidate from 0x7c11edb826692404
 
 pub contract VnMiss: NonFungibleToken {

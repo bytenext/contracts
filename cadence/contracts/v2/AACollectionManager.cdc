@@ -1,5 +1,4 @@
-
-import AACommon from "./AACommon.cdc"
+import AACommon from 0x39eeb4ee6f30fc3f
 
 pub contract AACollectionManager {
     access(self) let collections: @{UInt64: Collection}

@@ -1,11 +1,11 @@
 import FungibleToken from 0xf233dcee88fe0abe
 import NonFungibleToken from 0x1d7e57aa55817448
 
-import AACommon from "./AACommon.cdc"
-import AACollectionManager from "./AACollectionManager.cdc"
-import AACurrencyManager from "./AACurrencyManager.cdc"
-import AAFeeManager from "./AAFeeManager.cdc"
-import AAReferralManager from "./AAReferralManager.cdc"
+import AACommon from 0x39eeb4ee6f30fc3f
+import AACollectionManager from 0x39eeb4ee6f30fc3f
+import AACurrencyManager from 0x39eeb4ee6f30fc3f
+import AAFeeManager from 0x39eeb4ee6f30fc3f
+import AAReferralManager from 0x39eeb4ee6f30fc3f
 
 pub contract AAOpenBid {
     pub event AAOpenBidInitialized()
