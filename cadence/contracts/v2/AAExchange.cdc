@@ -124,7 +124,7 @@ pub contract AAExchange {
         cuts.appendAll(collectionCuts)
       }
 
-      for cut in itemCuts {
+      for cut in cuts {
         addPayment(type: cut.type, recipient: cut.recipient, rate: cut.rate, amount: nil)
       }
       assert(ownerAmount >= minimumRequire, message: "Minimum require not pass")
@@ -180,13 +180,7 @@ pub contract AAExchange {
         recipient.deposit(token: <- nft)
 
         let affiliateAmount = self.affiliateAmounts[listingResourceID]!
-        let affPayment = AAFeeManager.paidAffiliateFee(paymentType: details.salePaymentVaultType, affiliate: affiliate, amount: affiliateAmount)
-        if let affPayment = affPayment {
-            cuts.append(CutPaid(
-              to: affPayment.recipient,
-              amount: affPayment.amount,
-            ))
-        }
+        AAFeeManager.paidAffiliateFee(paymentType: details.salePaymentVaultType, affiliate: affiliate, amount: affiliateAmount)
 
         store.cleanup(listingResourceID: listingResourceID)
         self.affiliateAmounts.remove(key: listingResourceID)
