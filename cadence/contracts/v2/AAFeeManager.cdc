@@ -1,4 +1,4 @@
-import FungibleToken from "../core/FungibleToken.cdc"
+import FungibleToken from 0xf233dcee88fe0abe
 import AACommon from "./AACommon.cdc"
 import AAReferralManager from "./AAReferralManager.cdc"
 

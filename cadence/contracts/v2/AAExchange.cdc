@@ -1,6 +1,6 @@
-import NFTStorefront from "../core/NFTStorefront.cdc"
-import NonFungibleToken from "../core/NonFungibleToken.cdc"
-import FungibleToken from "../core/FungibleToken.cdc"
+import NFTStorefront from 0x4eb8a10cb9f87357
+import NonFungibleToken from 0x1d7e57aa55817448
+import FungibleToken from 0xf233dcee88fe0abe
 
 import AACollectionManager from "./AACollectionManager.cdc"
 import AACurrencyManager from "./AACurrencyManager.cdc"
