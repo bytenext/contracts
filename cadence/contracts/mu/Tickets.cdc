@@ -28,7 +28,6 @@ pub contract Tickets {
 
     pub let AdminStoragePath: StoragePath
     pub let FlowReceiverPath: PublicPath
-    pub let ProxyPath: StoragePath
 
     pub struct PaymentCut {
         pub let recipient: Address
@@ -419,7 +418,6 @@ pub contract Tickets {
 
         self.AdminStoragePath = /storage/BNMUTicketsAdmin
         self.FlowReceiverPath = /public/flowTokenReceiver
-        self.ProxyPath = /storage/BNMUTicketsProxy
 
         self.minted = {}
         self.candidateFund <- FlowToken.createEmptyVault()
