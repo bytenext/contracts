@@ -93,6 +93,7 @@ pub contract AACollectionManager {
 
         let collection = &AACollectionManager.collections[collectionID] as &Collection
         collection.addItemToCollection(type: type, nftID: nftID)
+        AACollectionManager.items[id] = collectionID
       }
 
 
@@ -103,6 +104,9 @@ pub contract AACollectionManager {
 
         let collection = &AACollectionManager.collections[collectionID] as &Collection
         collection.removeItemFromCollection(type: type, nftID: nftID)
+
+        let id = AACommon.itemIdentifier(type: type, id: nftID)
+        AACollectionManager.items.remove(key: id)
       }
     }
 
