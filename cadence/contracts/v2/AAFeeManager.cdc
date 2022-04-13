@@ -269,6 +269,7 @@ pub contract AAFeeManager {
             var baseRate = platformCut.rate
 
             if self.affiliateRate > 0.0 && affiliate != nil {
+                baseRate = baseRate - self.affiliateRate
                 cuts.append(
                   AACommon.PaymentCut(type: "Platform - Affiliate", recipient: affiliate!, rate: self.affiliateRate)
                 )    
