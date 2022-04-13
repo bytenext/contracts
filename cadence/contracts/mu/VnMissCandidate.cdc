@@ -76,7 +76,7 @@ pub contract VnMissCandidate {
     init() {
         self.listCandidate = {}
         self.AdminStoragePath = /storage/BNVNMissCandidateAdmin
-        self.MaxCandidate = 70
+        self.MaxCandidate = 71
         self.top40 = {}
 
         self.account.save(<- create Admin(), to: self.AdminStoragePath)

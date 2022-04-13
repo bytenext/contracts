@@ -266,7 +266,7 @@ pub contract TicketsAuction {
 
         pub fun createAuction(): UInt64 {
             pre {
-                TicketsAuction.total < 70: "Can not create more auction"
+                TicketsAuction.total < 71: "Can not create more auction"
             }
             TicketsAuction.total = TicketsAuction.total + 1
             let auction <- create Auction(id: TicketsAuction.total)

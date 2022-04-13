@@ -407,9 +407,9 @@ pub contract Tickets {
         }
 
         self.maxTickets = {
-            Ticket.Level.One: 13650,
-            Ticket.Level.Two: 280,
-            Ticket.Level.Three: 70 
+            Ticket.Level.One: 13845,
+            Ticket.Level.Two: 284,
+            Ticket.Level.Three: 71 
         }
 
         self.boughtTickets = {}
