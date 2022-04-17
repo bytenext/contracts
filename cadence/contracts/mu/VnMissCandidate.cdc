@@ -6,6 +6,7 @@ pub contract VnMissCandidate {
     pub let MaxCandidate: Int
 
     pub event NewCandidate(id: UInt64, name: String, fundAddress: Address)
+    pub event CandidateUpdate(id: UInt64, name: String, fundAddress: Address)
 
     pub struct Candidate {
         pub let id: UInt64
@@ -66,6 +67,22 @@ pub contract VnMissCandidate {
             for id in ids {
                 VnMissCandidate.top40[id] = isTop40
             }
+        }
+
+        pub fun updateCandidate(
+            id: UInt64,
+            name: String,
+            code: String,
+            description: String,
+            fundAddress: Address,
+            properties: {String: String}
+        ) {
+            pre {
+                VnMissCandidate.listCandidate.containsKey(id): "Candidate not exist"
+            }
+            
+            VnMissCandidate.listCandidate[id] = Candidate(id: id, name: name, code: code, description: description, fundAddress: fundAddress, properties: properties)
+            emit CandidateUpdate(id: id, name: name, fundAddress: fundAddress)
         }
     }
 
