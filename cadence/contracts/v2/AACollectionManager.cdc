@@ -57,7 +57,7 @@ pub contract AACollectionManager {
 
     pub fun borrowCollection(id: UInt64): &Collection{CollectionPublic}? {
         if self.collections[id] != nil {
-          return &self.collections[id] as! &Collection{CollectionPublic}
+          return (&self.collections[id] as! &Collection{CollectionPublic}?)!
         }
         return  nil
     }
@@ -91,7 +91,7 @@ pub contract AACollectionManager {
         let id = AACommon.itemIdentifier(type: type, id: nftID)
         assert(AACollectionManager.items[id] == nil, message: "1 NFT should only in a collection")
 
-        let collection = &AACollectionManager.collections[collectionID] as &Collection
+        let collection = (&AACollectionManager.collections[collectionID] as &Collection?)!
         collection.addItemToCollection(type: type, nftID: nftID)
         AACollectionManager.items[id] = collectionID
       }
@@ -102,7 +102,7 @@ pub contract AACollectionManager {
           AACollectionManager.collections.containsKey(collectionID): "Collection not exist"
         }
 
-        let collection = &AACollectionManager.collections[collectionID] as &Collection
+        let collection = (&AACollectionManager.collections[collectionID] as &Collection?)!
         collection.removeItemFromCollection(type: type, nftID: nftID)
 
         let id = AACommon.itemIdentifier(type: type, id: nftID)
