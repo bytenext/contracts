@@ -98,13 +98,13 @@ pub contract Ticket: NonFungibleToken {
         // borrowNFT gets a reference to an NFT in the collection
         // so that the caller can read its metadata and call its methods
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT {
-            return &self.ownedNFTs[id] as &NonFungibleToken.NFT
+            return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
         }
  
         pub fun borrowTicket(id: UInt64): &Ticket.NFT? {
             if self.ownedNFTs[id] != nil {
                 // Create an authorized reference to allow downcasting
-                let ref = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+                let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
                 return ref as! &Ticket.NFT
             }
 

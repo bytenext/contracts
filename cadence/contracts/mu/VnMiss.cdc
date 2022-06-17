@@ -122,13 +122,13 @@ pub contract VnMiss: NonFungibleToken {
         // borrowNFT gets a reference to an NFT in the collection
         // so that the caller can read its metadata and call its methods
         pub fun borrowNFT(id: UInt64): &NonFungibleToken.NFT {
-            return &self.ownedNFTs[id] as &NonFungibleToken.NFT
+            return (&self.ownedNFTs[id] as &NonFungibleToken.NFT?)!
         }
  
         pub fun borrowVnMiss(id: UInt64): &VnMiss.NFT? {
             if self.ownedNFTs[id] != nil {
                 // Create an authorized reference to allow downcasting
-                let ref = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+                let ref = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
                 return ref as! &VnMiss.NFT
             }
 
@@ -136,7 +136,7 @@ pub contract VnMiss: NonFungibleToken {
         }
 
         pub fun borrowViewResolver(id: UInt64): &AnyResource{MetadataViews.Resolver} {
-            let nft = &self.ownedNFTs[id] as auth &NonFungibleToken.NFT
+            let nft = (&self.ownedNFTs[id] as auth &NonFungibleToken.NFT?)!
             let exampleNFT = nft as! &VnMiss.NFT
             return exampleNFT as &AnyResource{MetadataViews.Resolver}
         }
